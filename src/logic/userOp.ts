@@ -1,4 +1,5 @@
-import { ethers } from 'ethers'
+import { hexToBytes } from 'viem';
+
 import {
   SafeAccountV0_3_0 as SafeAccount,
   SignerSignaturePair,
@@ -30,14 +31,14 @@ async function signAndSendUserOp(
   smartAccount: SafeAccount,
   userOp: UserOperationV7,
   passkey: PasskeyLocalStorageFormat,
-  chainId: ethers.BigNumberish = import.meta.env.VITE_CHAIN_ID,
+  chainId: bigint | string | number = import.meta.env.VITE_CHAIN_ID,
   bundlerUrl: string = import.meta.env.VITE_BUNDLER_URL,
 ): Promise<SendUseroperationResponse> {
-  const safeInitOpHash = SafeAccount.getUserOperationEip712Hash(userOp, BigInt(chainId))
+  const safeInitOpHash = SafeAccount.getUserOperationEip712Hash(userOp, BigInt(chainId)) ;
 
   const assertion = (await navigator.credentials.get({
     publicKey: {
-      challenge: ethers.getBytes(safeInitOpHash),
+      challenge: hexToBytes(safeInitOpHash as `0x${string}`),
       allowCredentials: [{ type: 'public-key', id: hexStringToUint8Array(passkey.rawId)}],
     },
   })) as Assertion | null

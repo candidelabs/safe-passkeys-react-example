@@ -1,5 +1,5 @@
 import { Buffer } from 'buffer'
-import { ethers } from 'ethers'
+import { toHex, stringToBytes, maxUint256 } from 'viem';
 
 type PasskeyCredential = {
   id: 'string'
@@ -151,8 +151,8 @@ function extractSignature(signature: ArrayBuffer | Uint8Array): [bigint, bigint]
     const len = view.getUint8(offset + 1)
     const start = offset + 2
     const end = start + len
-    const n = BigInt(ethers.hexlify(new Uint8Array(view.buffer.slice(start, end))))
-    check(n < ethers.MaxUint256)
+    const n = BigInt(toHex(new Uint8Array(view.buffer.slice(start, end))))
+    check(n < maxUint256)
     return [n, end] as const
   }
   const [r, sOffset] = readInt(2)
@@ -177,7 +177,7 @@ function extractClientDataFields(response: AuthenticatorAssertionResponse): stri
   }
 
   const [, fields] = match
-  return ethers.hexlify(ethers.toUtf8Bytes(fields))
+  return toHex(stringToBytes(fields))
 }
 
 export {
