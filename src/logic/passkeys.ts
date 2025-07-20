@@ -1,5 +1,4 @@
 import {
-  createChallenge,
   createCredential,
   type P256Credential,
 } from 'ox/WebAuthnP256'
@@ -15,7 +14,7 @@ async function createPasskey(): Promise<P256Credential> {
   // Generate a passkey credential using WebAuthn API
   let passkeyCredential = await createCredential({
     name: 'Safe Wallet',
-    challenge: createChallenge,            // predefined Uint8Array
+    challenge: crypto.getRandomValues(new Uint8Array(32)),
     rp: { 
       id: window.location.hostname,
       name: 'Safe Wallet'

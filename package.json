@@ -11,7 +11,6 @@
   },
   "dependencies": {
     "abstractionkit": "0.2.19",
-    "axios": "^1.10.0",
     "buffer": "^6.0.3",
     "ethers": "^6.10.0",
     "ox": "^0.8.4",
