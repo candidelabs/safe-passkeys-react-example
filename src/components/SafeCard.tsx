@@ -10,7 +10,9 @@ import {
 import { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
 import { getItem } from "../logic/storage";
-import { JsonRpcProvider } from "ethers";
+import { createPublicClient, http } from 'viem';
+import { getCode } from 'viem/actions';
+
 
 const jsonRPCProvider = import.meta.env.VITE_JSON_RPC_PROVIDER;
 const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
@@ -35,11 +37,19 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	>(undefined);
 
 	const accountAddress = getItem("accountAddress") as string;
-	const provider = new JsonRpcProvider(import.meta.env.VITE_JSON_RPC_PROVIDER);
+	const client = createPublicClient({
+	transport: http(import.meta.env.VITE_JSON_RPC_PROVIDER),
+	});
 
 	const isDeployed = async () => {
-		const safeCode = await provider.getCode(accountAddress);
-		setDeployed(safeCode !== "0x");
+		if (!accountAddress || !accountAddress.startsWith('0x')) {
+  			throw new Error(`Invalid address: ${accountAddress}`);
+		}
+
+		const safeCode = await getCode(client, { 
+			address: accountAddress as `0x${string}`
+		});
+		setDeployed(safeCode !== null && safeCode !== '0x');
 	};
 
 	const handleMintNFT = async () => {
