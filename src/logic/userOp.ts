@@ -1,5 +1,6 @@
-import { hexToBytes } from 'viem';
-
+import { sign } from 'ox/WebAuthnP256';
+import { Hex as OxHex } from 'ox/Hex'
+import { Bytes, Hex } from 'ox'
 import {
   SafeAccountV0_3_0 as SafeAccount,
   SignerSignaturePair,
@@ -9,23 +10,27 @@ import {
 } from 'abstractionkit'
 
 import { 
-  PasskeyLocalStorageFormat, 
-  extractSignature, 
-  extractClientDataFields 
+  PasskeyLocalStorageFormat
 } from './passkeys'
-import { hexStringToUint8Array } from '../utils'
-
-type Assertion = {
-  response: AuthenticatorAssertionResponse
-}
 
 /**
- * Signs and sends a user operation to the specified entry point on the blockchain.
- * @param userOp The unsigned user operation to sign and send.
- * @param passkey The passkey used for signing the user operation.
- * @param chainId The chain ID of the blockchain. Defaults to APP_CHAIN_ID if not provided.
- * @returns User Operation hash promise.
- * @throws An error if signing the user operation fails.
+ * Signs a SafeAccount UserOperation using Ox/WebAuthnP256 and sends it to the bundler.
+ *
+ * Workflow:
+ * 1. Compute the EIP-712 hash of the UserOperation.
+ * 2. Call Ox `sign()` with the stored credential ID to obtain the raw WebAuthn signature and metadata.
+ * 3. Extract any extra clientDataJSON fields beyond the challenge.
+ * 4. Build a WebauthnSignatureData object for SafeAccount.
+ * 5. Generate the final EIP-4337 signature via SafeAccount API.
+ * 6. Embed the signature in the UserOperation and dispatch it.
+ *
+ * @param smartAccount - Initialized SafeAccount instance.
+ * @param userOp - The unsigned UserOperationV7.
+ * @param passkey - LocalStorage passkey containing `id` and public-key coords.
+ * @param chainId - Chain ID (bigint|string|number) for EIP-712 domain.
+ * @param bundlerUrl - URL of the bundler endpoint.
+ * @returns A promise resolving to the SendUseroperationResponse.
+ * @throws If the WebAuthn metadata format is invalid.
  */
 async function signAndSendUserOp(
   smartAccount: SafeAccount,
@@ -34,38 +39,49 @@ async function signAndSendUserOp(
   chainId: bigint | string | number = import.meta.env.VITE_CHAIN_ID,
   bundlerUrl: string = import.meta.env.VITE_BUNDLER_URL,
 ): Promise<SendUseroperationResponse> {
+    // 1. EIP-712 hash for the UserOperation
   const safeInitOpHash = SafeAccount.getUserOperationEip712Hash(userOp, BigInt(chainId)) ;
 
-  const assertion = (await navigator.credentials.get({
-    publicKey: {
-      challenge: hexToBytes(safeInitOpHash as `0x${string}`),
-      allowCredentials: [{ type: 'public-key', id: hexStringToUint8Array(passkey.rawId)}],
-    },
-  })) as Assertion | null
+  // 2. Sign via Ox/WebAuthnP256
+  const { metadata, signature } = await sign({
+    challenge: safeInitOpHash as OxHex,
+    credentialId: passkey.id as OxHex,
+  });
 
-  if (!assertion) {
-    throw new Error('Failed to sign user operation')
+  // 3. Extract additional clientDataJSON fields (post-challenge)
+  const clientDataMatch = metadata.clientDataJSON.match(
+    /^\{"type":"webauthn.get","challenge":"[A-Za-z0-9\-_]{43}",(.*)\}$/,
+  );
+  if (!clientDataMatch) {
+    throw new Error('Invalid clientDataJSON format: challenge not found');
   }
+  const [, fields] = clientDataMatch;
 
+  // 4. Assemble WebauthnSignatureData for SafeAccount
   const webauthnSignatureData: WebauthnSignatureData = {
-    authenticatorData: assertion.response.authenticatorData,
-    clientDataFields: extractClientDataFields(assertion.response),
-    rs: extractSignature(assertion.response.signature),
-  }
+    authenticatorData: Bytes.fromHex(metadata.authenticatorData)
+      .buffer as ArrayBuffer,
+    clientDataFields: Hex.fromString(fields),
+    rs: [signature.r, signature.s],
+  };
+  
+  // 5. Create the final Safe EIP-4337 signature
+  const webauthSignature = SafeAccount.createWebAuthnSignature(
+    webauthnSignatureData,
+  );
 
-  const webauthSignature: string = SafeAccount.createWebAuthnSignature(webauthnSignatureData)
-
-  const SignerSignaturePair: SignerSignaturePair = {
+  // 6. Attach to UserOperation and send
+  const signerSignaturePair: SignerSignaturePair = {
     signer: passkey.pubkeyCoordinates,
     signature: webauthSignature,
-  }
-
+  };
   userOp.signature = SafeAccount.formatSignaturesToUseroperationSignature(
-    [SignerSignaturePair],
-    { isInit: userOp.nonce == 0n },
+    [signerSignaturePair],
+    { isInit: userOp.nonce === 0n },
   );
-  console.log(userOp, "userOp");
-  return await smartAccount.sendUserOperation(userOp, bundlerUrl)
+
+  return smartAccount.sendUserOperation(userOp, bundlerUrl);
 }
 
 export { signAndSendUserOp }
+
