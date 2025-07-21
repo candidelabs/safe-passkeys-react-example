@@ -26,11 +26,13 @@ async function createPasskey(): Promise<P256Credential> {
     },
     timeout: 60000,
     attestation: 'none',
-  })
+  })  
 
   if (!passkeyCredential) {
     throw new Error('Failed to generate passkey. Received null as a credential')
   }
+
+  console.log("passkeyCredential", passkeyCredential);
   return passkeyCredential
 }
 
