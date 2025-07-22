@@ -15,12 +15,14 @@ ActiveRecord::Schema[8.0].define(version: 2025_07_21_142248) do
   enable_extension "pg_catalog.plpgsql"
 
   create_table "users", force: :cascade do |t|
-    t.string "username", null: false
+    t.string "account_address", null: false
     t.datetime "timestamp", default: -> { "now()" }, null: false
     t.jsonb "pubkey_coordinates", default: {}, null: false
     t.datetime "created_at", null: false
     t.datetime "updated_at", null: false
     t.string "pubkey_id"
+    t.string "username", limit: 255
     t.index ["pubkey_coordinates"], name: "index_users_on_pubkey_coordinates", using: :gin
+    t.index ["username"], name: "index_users_on_username", unique: true
   end
 end

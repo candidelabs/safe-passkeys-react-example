@@ -1,5 +1,9 @@
+# app/models/user.rb
 class User < ApplicationRecord
-  # Optional: ensure x/y are raw hex strings
+  # ensure we have both fields
+  validates :account_address, presence: true, uniqueness: true
+  validates :username,        presence: true
+
   validate :validate_pubkey_coordinates
 
   private

@@ -1,6 +1,10 @@
 Rails.application.routes.draw do
-  # GET /users/by_account/:account_address
-  get 'users/by_account/:account_address', to: 'users#by_account'
-
-  resources :users, only: [:create, :index]
+  resources :users, only: [:index, :create] do
+    collection do
+      # lookup by on‐chain address
+      get  'by_account/:account_address', to: 'users#by_account'
+      # new: lookup by display name
+      get  'by_username/:username',      to: 'users#login'
+    end
+  end
 end
