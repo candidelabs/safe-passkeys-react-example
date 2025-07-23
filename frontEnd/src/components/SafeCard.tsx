@@ -1,10 +1,8 @@
 // frontEnd/src/components/SafeCard.tsx
 import { useEffect, useState } from "react";
-// Import AbstractionKit as a namespace to avoid import errors
 import * as AbstractionKit from "abstractionkit";
 import type { MetaTransaction } from "abstractionkit";
 import type { PasskeyLocalStorageFormat } from "../logic/passkeys";
-// Use the existing helper that returns PasskeyLocalStorageFormat directly
 import { fetchPasskeyFromDB } from "../logic/api";
 import { signAndSendUserOp } from "../logic/userOp";
 import { createPublicClient, http } from "viem";
@@ -21,24 +19,22 @@ type SafeCardProps = {
 };
 
 export function SafeCard({ accountAddress }: SafeCardProps) {
-  const [passkey,      setPasskey]      = useState<PasskeyLocalStorageFormat>();
-  const [userOpHash,   setUserOpHash]   = useState<string>();
-  const [deployed,     setDeployed]     = useState<boolean>(false);
-  const [loadingTx,    setLoadingTx]    = useState<boolean>(false);
-  const [error,        setError]        = useState<string>();
-  const [txHash,       setTxHash]       = useState<string>();
-  const [gasSponsor,   setGasSponsor]   = useState<{ name: string; description: string; url: string; icons: string[] }>();
+  const [passkey,    setPasskey]    = useState<PasskeyLocalStorageFormat>();
+  const [userOpHash, setUserOpHash] = useState<string>();
+  const [deployed,   setDeployed]   = useState<boolean>(false);
+  const [loadingTx,  setLoadingTx]  = useState<boolean>(false);
+  const [error,      setError]      = useState<string>();
+  const [txHash,     setTxHash]     = useState<string>();
+  const [gasSponsor, setGasSponsor] = useState<{ name: string; description: string; url: string; icons: string[] }>();
 
   const client = createPublicClient({ transport: http(jsonRPCProvider) });
 
   useEffect(() => {
     (async () => {
       try {
-        // Fetch the passkey format directly from backend
         const fetched = await fetchPasskeyFromDB(accountAddress);
         setPasskey(fetched);
 
-        // Check if Safe contract is deployed
         const code = await getCode(client, { address: accountAddress as `0x${string}` });
         setDeployed(code !== null && code !== "0x");
       } catch (err) {
@@ -50,14 +46,12 @@ export function SafeCard({ accountAddress }: SafeCardProps) {
 
   const handleMintNFT = async () => {
     if (!passkey) return;
-
     setLoadingTx(true);
     setUserOpHash("");
     setTxHash("");
     setError("");
 
     try {
-      // Destructure the runtime exports
       const {
         SafeAccountV0_3_0: SafeAccount,
         getFunctionSelector,
@@ -65,13 +59,11 @@ export function SafeCard({ accountAddress }: SafeCardProps) {
         CandidePaymaster,
       } = AbstractionKit;
 
-      // Prepare the mint transaction
       const nftAddress = "0x9a7af758aE5d7B6aAE84fe4C5Ba67c041dFE5336";
       const selector   = getFunctionSelector("mint(address)");
       const data       = createCallData(selector, ["address"], [accountAddress]);
       const mintTxn: MetaTransaction = { to: nftAddress, value: 0n, data };
 
-      // Initialize SafeAccount and create user operation
       const safeAccount = SafeAccount.initializeNewAccount([passkey.pubkeyCoordinates]);
       let userOp = await safeAccount.createUserOperation(
         [mintTxn], jsonRPCProvider, bundlerUrl,
@@ -82,13 +74,11 @@ export function SafeCard({ accountAddress }: SafeCardProps) {
         }
       );
 
-      // Sponsor via paymaster
       const paymaster = new CandidePaymaster(paymasterUrl);
       const [sponsoredOp, sponsorMetadata] = await paymaster.createSponsorPaymasterUserOperation(userOp, bundlerUrl);
       setGasSponsor(sponsorMetadata);
       userOp = sponsoredOp;
 
-      // Sign & send the operation
       const bundlerRes = await signAndSendUserOp(safeAccount, userOp, passkey, chainId);
       setUserOpHash(bundlerRes.userOperationHash);
 
@@ -108,56 +98,50 @@ export function SafeCard({ accountAddress }: SafeCardProps) {
   };
 
   return (
-    <div className="card">
+    <div
+      className="card"
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}
+    >
+      <p style={{ textAlign: 'center', fontWeight: 500 }}>
+        Account Address:<br />
+        <a
+          href={`https://${chainName}.blockscout.com/address/${accountAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ wordBreak: 'break-all', color: '#3b82f6' }}
+        >
+          {accountAddress}
+        </a>
+      </p>
+
+      {loadingTx && !userOpHash && <p>Preparing transaction...</p>}
+
+      {!loadingTx && (
+        <button onClick={handleMintNFT} disabled={!!userOpHash}>
+          Mint NFT
+        </button>
+      )}
+
       {userOpHash && (
-        <p>
+        <p style={{ textAlign: 'center' }}>
           Your account setup is in progress. Sponsored by {gasSponsor?.name}
-          <a
-            href={gasSponsor?.url}
-            target="_blank"
-            rel="noopener noreferrer"
-            style={{ marginLeft: 5 }}
-          >
-            <img
-              src={gasSponsor?.icons[0]}
-              alt="logo"
-              style={{ width: 25, height: 25, verticalAlign: "middle" }}
-            />
-          </a>
-          <br />
-          Track on{' '}
-          <a
-            target="_blank"
-            href={`https://${chainName.toLowerCase()}.blockscout.com/op/${userOpHash}`}
-          >
-            explorer
-          </a>
+          {/* ... */}
         </p>
       )}
 
       {txHash && (
-        <p>
-          NFT minted successfully!<br />
+        <p style={{ textAlign: 'center' }}>
+          You collected an NFT, secured with your Safe Account & authenticated by your Device Passkeys.<br />
           <a
             target="_blank"
             href={`https://${chainName}.blockscout.com/tx/${txHash}`}
           >
-            View on explorer
+            View on block explorer
           </a>
         </p>
       )}
 
-      {loadingTx && !userOpHash ? (
-        <p>Preparing transaction...</p>
-      ) : (
-        accountAddress && (
-          <button onClick={handleMintNFT} disabled={!!userOpHash}>
-            Mint NFT
-          </button>
-        )
-      )}
-
-      {error && <p style={{ color: 'red' }}>Error: {error}</p>}
+      {error && <p style={{ color: 'red', textAlign: 'center' }}>Error: {error}</p>}
     </div>
   );
 }

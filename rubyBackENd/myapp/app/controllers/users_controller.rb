@@ -5,7 +5,7 @@ class UsersController < ApplicationController
 
   # Rescue any uniqueness-constraint violations (duplicate username or account_address)
   rescue_from ActiveRecord::RecordNotUnique do
-    render json: { error: "Username already exists. Please login." }, status: :conflict
+    render json: { error: "Username already exists. Please write new one." }, status: :conflict
   end
 
   # GET /users
