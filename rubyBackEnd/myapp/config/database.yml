@@ -1,0 +1,22 @@
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  username: myapp_user
+  password: myapp_password
+  host: localhost
+  pool: 5
+
+development:
+  <<: *default
+  database: myapp_development
+
+test:
+  <<: *default
+  database: myapp_test
+
+production:
+  <<: *default
+  database: myapp_production
+  # You’ll probably pull credentials from ENV in real deployments:
+  # username: <%= ENV['PG_USER'] %>
+  # password: <%= ENV['PG_PASSWORD'] %>

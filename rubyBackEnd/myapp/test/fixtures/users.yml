@@ -1,0 +1,11 @@
+# Read about fixtures at https://api.rubyonrails.org/classes/ActiveRecord/FixtureSet.html
+
+one:
+  username: MyString
+  timestamp: 2025-07-21 15:48:30
+  pubkey_coordinates: 
+
+two:
+  username: MyString
+  timestamp: 2025-07-21 15:48:30
+  pubkey_coordinates: 
