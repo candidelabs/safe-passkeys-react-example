@@ -86,10 +86,10 @@ rails db:migrate
 ```
 
 
-### Frontend (React + Vite)
+### Frontend 
 
 ```bash
-cd frontEnd/myapp
+cd frontEnd
 npm install
 ```
 
@@ -111,15 +111,15 @@ Edit `.env` to configure the following:
 
 ## 🧪 3. Run the App
 
-### Start backend (Rails)
+### Start backend 
 
 ```bash
-cd rubyBackENd
+cd rubyBackEnd/myapp
 rails server
 ```
 
 
-### Start frontend (Vite)
+### Start frontend 
 
 In a second terminal tab:
 
