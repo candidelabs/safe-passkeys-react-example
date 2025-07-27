@@ -9,6 +9,8 @@
 import safeLogo from "/safe-logo-white.svg";
 import candideLogo from "/candide-atelier-logo.svg";
 import "./App.css";
+import { sign } from 'ox/WebAuthnP256';
+import type { Hex as OxHex } from 'ox/Hex';
 
 import { useState } from "react";
 import {
@@ -35,6 +37,12 @@ function App() {
     }
     try {
       const { account_address, passkey } = await loginUser(displayName);
+
+      await sign({
+        challenge: account_address as OxHex,
+        credentialId: passkey.id as OxHex,
+      });
+
       setPasskey(passkey);
       setAccountAddress(account_address);
     } catch (err) {
