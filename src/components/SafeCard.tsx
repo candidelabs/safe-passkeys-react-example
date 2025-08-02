@@ -1,202 +1,146 @@
 import { useEffect, useState } from "react";
-import {
-	SafeAccountV0_3_0 as SafeAccount,
-	getFunctionSelector,
-	createCallData,
-	MetaTransaction,
-	CandidePaymaster,
-} from "abstractionkit";
-
-import { PasskeyLocalStorageFormat } from "../logic/passkeys";
+import * as AbstractionKit from "abstractionkit";
+import type { MetaTransaction } from "abstractionkit";
+import type { PasskeyLocalStorageFormat } from "../logic/passkeys";
+import { fetchPasskeyFromDB } from "../logic/passkeys-server-api";
 import { signAndSendUserOp } from "../logic/userOp";
-import { getItem } from "../logic/storage";
-import { createPublicClient, http } from 'viem';
-import { getCode } from 'viem/actions';
+import { createPublicClient, http } from "viem";
+import { getCode } from "viem/actions";
 
+const jsonRPCProvider = import.meta.env.VITE_JSON_RPC_PROVIDER!;
+const bundlerUrl       = import.meta.env.VITE_BUNDLER_URL!;
+const paymasterUrl     = import.meta.env.VITE_PAYMASTER_URL!;
+const chainId          = Number(import.meta.env.VITE_CHAIN_ID!);
+const chainName        = import.meta.env.VITE_CHAIN_NAME as string;
 
-const jsonRPCProvider = import.meta.env.VITE_JSON_RPC_PROVIDER;
-const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
-const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
-const chainId = import.meta.env.VITE_CHAIN_ID;
-const chainName = import.meta.env.VITE_CHAIN_NAME as string;
+type SafeCardProps = {
+  accountAddress: string;
+};
 
-function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
-	const [userOpHash, setUserOpHash] = useState<string>();
-	const [deployed, setDeployed] = useState<boolean>(false);
-	const [loadingTx, setLoadingTx] = useState<boolean>(false);
-	const [error, setError] = useState<string>();
-	const [txHash, setTxHash] = useState<string>();
-	const [gasSponsor, setGasSponsor] = useState<
-		| {
-				name: string;
-				description: string;
-				url: string;
-				icons: string[];
-		  }
-		| undefined
-	>(undefined);
+export function SafeCard({ accountAddress }: SafeCardProps) {
+  const [passkey,    setPasskey]    = useState<PasskeyLocalStorageFormat>();
+  const [userOpHash, setUserOpHash] = useState<string>();
+  const [deployed,   setDeployed]   = useState<boolean>(false);
+  const [loadingTx,  setLoadingTx]  = useState<boolean>(false);
+  const [error,      setError]      = useState<string>();
+  const [txHash,     setTxHash]     = useState<string>();
+  const [gasSponsor, setGasSponsor] = useState<{ name: string; description: string; url: string; icons: string[] }>();
 
-	const accountAddress = getItem("accountAddress") as string;
-	const client = createPublicClient({
-	transport: http(import.meta.env.VITE_JSON_RPC_PROVIDER),
-	});
+  const client = createPublicClient({ transport: http(jsonRPCProvider) });
 
-	const isDeployed = async () => {
-		if (!accountAddress || !accountAddress.startsWith('0x')) {
-  			throw new Error(`Invalid address: ${accountAddress}`);
-		}
+  useEffect(() => {
+    (async () => {
+      try {
+        const fetched = await fetchPasskeyFromDB(accountAddress);
+        setPasskey(fetched);
 
-		const safeCode = await getCode(client, { 
-			address: accountAddress as `0x${string}`
-		});
-		setDeployed(safeCode !== null && safeCode !== '0x');
-	};
+        const code = await getCode(client, { address: accountAddress as `0x${string}` });
+        setDeployed(code !== null && code !== "0x");
+      } catch (err) {
+        console.error(err);
+        setError("Failed to fetch passkey or check deployment.");
+      }
+    })();
+  }, [accountAddress]);
 
-	const handleMintNFT = async () => {
-		setLoadingTx(true);
-		setTxHash("");
-		setError("");
-		// mint an NFT
-		const nftContractAddress = "0x9a7af758aE5d7B6aAE84fe4C5Ba67c041dFE5336";
-		const mintFunctionSignature = "mint(address)";
-		const mintFunctionSelector = getFunctionSelector(mintFunctionSignature);
-		const mintTransactionCallData = createCallData(
-			mintFunctionSelector,
-			["address"],
-			[accountAddress],
-		);
-		const mintTransaction: MetaTransaction = {
-			to: nftContractAddress,
-			value: 0n,
-			data: mintTransactionCallData,
-		};
+  const handleMintNFT = async () => {
+    if (!passkey) return;
+    setLoadingTx(true);
+    setUserOpHash("");
+    setTxHash("");
+    setError("");
 
-		const safeAccount = SafeAccount.initializeNewAccount([
-			passkey.pubkeyCoordinates,
-		]);
+    try {
+      const {
+        SafeAccountV0_3_0: SafeAccount,
+        getFunctionSelector,
+        createCallData,
+        CandidePaymaster,
+      } = AbstractionKit;
 
-		try {
-			let userOperation = await safeAccount.createUserOperation(
-				[mintTransaction],
-				jsonRPCProvider,
-				bundlerUrl,
-				{
-					expectedSigners: [passkey.pubkeyCoordinates],
-					preVerificationGasPercentageMultiplier: 120,
-					verificationGasLimitPercentageMultiplier: 120,
-				},
-			);
+      const nftAddress = "0x9a7af758aE5d7B6aAE84fe4C5Ba67c041dFE5336";
+      const selector   = getFunctionSelector("mint(address)");
+      const data       = createCallData(selector, ["address"], [accountAddress]);
+      const mintTxn: MetaTransaction = { to: nftAddress, value: 0n, data };
 
-			let paymaster: CandidePaymaster = new CandidePaymaster(paymasterUrl);
-			let [userOperationSponsored, sponsorMetadata] =
-				await paymaster.createSponsorPaymasterUserOperation(
-					userOperation,
-					bundlerUrl,
-				);
-			setGasSponsor(sponsorMetadata);
-			userOperation = userOperationSponsored;
-			const bundlerResponse = await signAndSendUserOp(
-				safeAccount,
-				userOperation,
-				passkey,
-				chainId,
-			);
-			setUserOpHash(bundlerResponse.userOperationHash);
-			let userOperationReceiptResult = await bundlerResponse.included();
-			if (userOperationReceiptResult.success) {
-				setTxHash(userOperationReceiptResult.receipt.transactionHash);
-				console.log(
-					"One NTF was minted. The transaction hash is : " +
-						userOperationReceiptResult.receipt.transactionHash,
-				);
-				setUserOpHash("");
-			} else {
-				setError("Useroperation execution failed");
-			}
-		} catch (error) {
-			if (error instanceof Error) {
-				console.log(error);
-				setError(error.message);
-			} else {
-				setError("Unknown error");
-			}
-		}
-		setLoadingTx(false);
-	};
+      const safeAccount = SafeAccount.initializeNewAccount([passkey.pubkeyCoordinates]);
+      let userOp = await safeAccount.createUserOperation(
+        [mintTxn], jsonRPCProvider, bundlerUrl,
+        {
+          expectedSigners: [passkey.pubkeyCoordinates],
+          preVerificationGasPercentageMultiplier: 120,
+          verificationGasLimitPercentageMultiplier: 120,
+        }
+      );
 
-	useEffect(() => {
-		if (accountAddress) {
-			async function isAccountDeployed() {
-				await isDeployed();
-			}
-			isAccountDeployed();
-		}
-	}, [deployed, accountAddress]);
+      const paymaster = new CandidePaymaster(paymasterUrl);
+      const [sponsoredOp, sponsorMetadata] = await paymaster.createSponsorPaymasterUserOperation(userOp, bundlerUrl);
+      setGasSponsor(sponsorMetadata);
+      userOp = sponsoredOp;
 
-	return (
-		<div className="card">
-			{userOpHash && (
-				<p>
-					Your account setup is in progress. This operation gas is sponsored by{" "}
-					{gasSponsor?.name}
-					<a
-						href={gasSponsor?.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						style={{ marginLeft: "5px" }}
-					>
-						<img
-							src={gasSponsor?.icons[0]}
-							alt="logo"
-							style={{ width: "25px", height: "25px", verticalAlign: "middle" }}
-						/>
-					</a>
-					<br />
-					<br />
-					Track your operation on{" "}
-					<a
-						target="_blank"
-						href={`https://${chainName.toLowerCase()}.blockscout.com/op/${userOpHash}`}
-					>
-						the block explorer
-					</a>
-				</p>
-			)}
-			{txHash && (
-				<>
-					You collected an NFT, secured with your Safe Account & authenticated
-					by your Device Passkeys.
-					<br />
-					<br />
-					View more on{" "}
-					<a
-						target="_blank"
-						href={`https://${chainName}.blockscout.com/tx/${txHash}`}
-					>
-						the block explorer
-					</a>
-					<br />
-				</>
-			)}
-			{loadingTx && !userOpHash ? (
-				<p>"Preparing transaction.."</p>
-			) : (
-				accountAddress && (
-					<div className="card">
-						<br />
-						<button onClick={handleMintNFT} disabled={!!userOpHash}>
-							Mint NFT
-						</button>
-					</div>
-				)
-			)}{" "}
-			{error && (
-				<div className="card">
-					<p>Error: {error}</p>
-				</div>
-			)}
-		</div>
-	);
+      const bundlerRes = await signAndSendUserOp(safeAccount, userOp, passkey, chainId);
+      setUserOpHash(bundlerRes.userOperationHash);
+
+      const receipt = await bundlerRes.included();
+      if (receipt.success) {
+        setTxHash(receipt.receipt.transactionHash);
+        setUserOpHash("");
+      } else {
+        setError("User operation execution failed");
+      }
+    } catch (err) {
+      console.error(err);
+      setError(err instanceof Error ? err.message : "Unknown error");
+    } finally {
+      setLoadingTx(false);
+    }
+  };
+
+  return (
+    <div
+      className="card"
+      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1rem' }}
+    >
+      <p style={{ textAlign: 'center', fontWeight: 500 }}>
+        Account Address:<br />
+        <a
+          href={`https://${chainName}.blockscout.com/address/${accountAddress}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          style={{ wordBreak: 'break-all', color: '#3b82f6' }}
+        >
+          {accountAddress}
+        </a>
+      </p>
+
+      {loadingTx && !userOpHash && <p>Preparing transaction...</p>}
+
+      {!loadingTx && (
+        <button onClick={handleMintNFT} disabled={!!userOpHash}>
+          Mint NFT
+        </button>
+      )}
+
+      {userOpHash && (
+        <p style={{ textAlign: 'center' }}>
+          Your account setup is in progress. Sponsored by {gasSponsor?.name}
+          {/* ... */}
+        </p>
+      )}
+
+      {txHash && (
+        <p style={{ textAlign: 'center' }}>
+          You collected an NFT, secured with your Safe Account & authenticated by your Device Passkeys.<br />
+          <a
+            target="_blank"
+            href={`https://${chainName}.blockscout.com/tx/${txHash}`}
+          >
+            View on block explorer
+          </a>
+        </p>
+      )}
+
+      {error && <p style={{ color: 'red', textAlign: 'center' }}>Error: {error}</p>}
+    </div>
+  );
 }
-
-export { SafeCard };

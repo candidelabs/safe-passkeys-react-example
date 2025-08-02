@@ -10,14 +10,14 @@ import {
  * @returns A promise that resolves to a P256Credential, which includes the credential's rawId and publicKey coordinates.
  * @throws Throws an Error if credential creation fails or returns null.
  */
-async function createPasskey(): Promise<P256Credential> {
+async function createPasskey(name: string = "Safe Wallet"): Promise<P256Credential> {
   // Generate a passkey credential using WebAuthn API
   let passkeyCredential = await createCredential({
-    name: 'Safe Wallet',
+    name,
     challenge: crypto.getRandomValues(new Uint8Array(32)),
     rp: { 
       id: window.location.hostname,
-      name: 'Safe Wallet'
+      name
     },
     authenticatorSelection: {
       authenticatorAttachment: 'platform',
@@ -26,11 +26,12 @@ async function createPasskey(): Promise<P256Credential> {
     },
     timeout: 60000,
     attestation: 'none',
-  })
+  })  
 
   if (!passkeyCredential) {
     throw new Error('Failed to generate passkey. Received null as a credential')
   }
+
   return passkeyCredential
 }
 

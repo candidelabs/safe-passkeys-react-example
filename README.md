@@ -1,39 +1,77 @@
-# Passkeys Safe Example
+# Safe Passkeys Demo — Frontend
 
-This minimalistic example application demonstrates how to use **Passkeys as an authentication mechanism for a Safe Account**. It leverages the WebAuthn API to interact directly with the user's device credentials. A paymaster is configured to sponsor the user operation gas fees.
+A Vite + React TypeScript demo that shows how to:
 
-## Quickstart
+- Blockchain-safe account abstraction using `viem`, `ox` and Candide's `abstractionkit`.
+- Create and **store** a WebAuthn-based passkey (credential) paired with an on-chain account address and a username.
+- **Login** by username and re-use your passkey (no re-registration).
+- **Mint an NFT** via a sponsored EIP-4337 UserOperation, all signed with your passkey.
 
-Follow these steps to get the example running:
+You can adapt this UI to **any backend** or dataset that exposes these endpoints:
 
-1.  **Clone the Repo**
+```ts
+export type UserRecord = {
+  id: number;
+  account_address: string;               // on-chain account address
+  username: string;                      // user’s display name
+  pubkey_id: string;                     // passkey’s credential ID
+  pubkey_coordinates: { x: string; y: string };  // raw hex strings
+  timestamp: string;
+  created_at: string;
+  updated_at: string;
+};
+````
 
-    ```bash
-    git clone git@github.com/candidelabs/safe-passkeys-react-example.git
-    ```
+And if you prefer to use PostgreSQL, there’s a ready-made server you can point at:
 
-2.  **Install Dependencies**
+> 🔗 [https://github.com/candidelabs/simple-passkeys-server](https://github.com/candidelabs/simple-passkeys-server)
 
-    ```bash
-    cd safe-passkeys-react-example
-    npm install
-    ```
+---
 
-3.  **Configure Environment Variables**
+### 📦 Quickstart
 
-    ```bash
-    cp .env.example .env
-    ```
+1. **Clone & install**
 
-    * **Default Network:** Examples run on Arbitrum Sepolia. Change your `.env` if you prefer another network.
-    * **Endpoints:** `BUNDLER_URL` and `PAYMASTER_URL` use public endpoints. You can get your own dedicated endpoints from [Candide Dashboard](https://dashboard.candide.dev/).
+   ```bash
+   cd safe-passkey-react-example
+   npm install
+   ```
 
-3.  **Run the app**
+2. **Configure**
+   Copy & edit your env:
 
-    ```bash
-    npm run dev
-    ```
+   ```bash
+   cp .env.example .env
+   ```
 
-## Resources
+ Edit `.env` to configure the following:
 
-Safe Passkeys documentation can be found [here](https://docs.candide.dev/wallet/plugins/passkeys/).
+* **Default Network:** Arbitrum Sepolia
+* **VITE\_API\_BASE\_URL:** e.g. `http://localhost:3000`
+* **VITE\_BUNDLER\_URL** / **VITE\_PAYMASTER\_URL**: default to public Candide endpoints or get your own from [Candide Dashboard](https://dashboard.candide.dev/)
+
+
+3. **Run**
+
+   ```bash
+   npm run dev
+   ```
+
+   Open [http://localhost:5173](http://localhost:5173)
+
+---
+
+### 🚀 Features
+
+* **Passkey creation** & storage on your DB.
+* **Passwordless login** via WebAuthn.
+* **Gasless minting** with EIP-4337 UserOperations and Candide Paymaster.
+
+---
+
+### 📚 Links
+
+* Safe Passkeys Docs: [https://docs.candide.dev/wallet/plugins/passkeys/](https://docs.candide.dev/wallet/plugins/passkeys/)
+* Candide Dashboard for API keys: [https://dashboard.candide.dev/](https://dashboard.candide.dev/)
+* Ox/WebAuthnP256: [https://github.com/candide-oss/web-authn-p256](https://github.com/candide-oss/web-authn-p256)
+* Vite: [https://vitejs.dev](https://vitejs.dev)
