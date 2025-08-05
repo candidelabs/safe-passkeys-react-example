@@ -10,8 +10,8 @@ import {
 import { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
 import { getItem } from "../logic/storage";
-import { createPublicClient, http } from 'viem';
-import { getCode } from 'viem/actions';
+import { createPublicClient, http, formatUnits, parseUnits } from 'viem';
+import { getCode, readContract } from 'viem/actions';
 
 
 const jsonRPCProvider = import.meta.env.VITE_JSON_RPC_PROVIDER;
@@ -19,6 +19,39 @@ const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
 const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
 const chainId = import.meta.env.VITE_CHAIN_ID;
 const chainName = import.meta.env.VITE_CHAIN_NAME as string;
+const erc20TokenAddress = "0xE0BD422189D77cD1AC77C520B363a7FA649FFdf1" as `0x${string}`;
+
+// ERC-20 ABI for the functions we need
+const ERC20_ABI = [
+	{
+		inputs: [],
+		name: "name",
+		outputs: [{ name: "", type: "string" }],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [],
+		name: "symbol",
+		outputs: [{ name: "", type: "string" }],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [],
+		name: "decimals",
+		outputs: [{ name: "", type: "uint8" }],
+		stateMutability: "view",
+		type: "function"
+	},
+	{
+		inputs: [{ name: "account", type: "address" }],
+		name: "balanceOf",
+		outputs: [{ name: "", type: "uint256" }],
+		stateMutability: "view",
+		type: "function"
+	}
+] as const;
 
 function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	const [userOpHash, setUserOpHash] = useState<string>();
@@ -26,6 +59,13 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	const [loadingTx, setLoadingTx] = useState<boolean>(false);
 	const [error, setError] = useState<string>();
 	const [txHash, setTxHash] = useState<string>();
+	const [recipientAddress, setRecipientAddress] = useState<string>("");
+	const [transferAmount, setTransferAmount] = useState<string>("");
+	const [tokenBalance, setTokenBalance] = useState<string>("0");
+	const [tokenName, setTokenName] = useState<string>("");
+	const [tokenSymbol, setTokenSymbol] = useState<string>("");
+	const [tokenDecimals, setTokenDecimals] = useState<number>(18);
+	const [loadingTokenInfo, setLoadingTokenInfo] = useState<boolean>(false);
 	const [gasSponsor, setGasSponsor] = useState<
 		| {
 				name: string;
@@ -52,23 +92,82 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		setDeployed(safeCode !== null && safeCode !== '0x');
 	};
 
-	const handleMintNFT = async () => {
+	const fetchTokenInfo = async () => {
+		if (!accountAddress) return;
+		
+		setLoadingTokenInfo(true);
+		try {
+			// Fetch token info in parallel using viem readContract
+			const [name, symbol, decimals, balance] = await Promise.all([
+				readContract(client, {
+					address: erc20TokenAddress,
+					abi: ERC20_ABI,
+					functionName: 'name',
+				}),
+				readContract(client, {
+					address: erc20TokenAddress,
+					abi: ERC20_ABI,
+					functionName: 'symbol',
+				}),
+				readContract(client, {
+					address: erc20TokenAddress,
+					abi: ERC20_ABI,
+					functionName: 'decimals',
+				}),
+				readContract(client, {
+					address: erc20TokenAddress,
+					abi: ERC20_ABI,
+					functionName: 'balanceOf',
+					args: [accountAddress as `0x${string}`],
+				}),
+			]);
+			
+			setTokenName(name as string);
+			setTokenSymbol(symbol as string);
+			setTokenDecimals(Number(decimals));
+			setTokenBalance(formatUnits(balance as bigint, Number(decimals)));
+		} catch (error) {
+			console.error("Error fetching token info:", error);
+			setTokenName("Unknown Token");
+			setTokenSymbol("UNK");
+			setTokenBalance("0");
+		} finally {
+			setLoadingTokenInfo(false);
+		}
+	};
+
+	const handleTransferERC20 = async () => {
+		if (!recipientAddress || !transferAmount) {
+			setError("Please provide both recipient address and transfer amount");
+			return;
+		}
+
+		// Validate transfer amount doesn't exceed balance
+		if (parseFloat(transferAmount) > parseFloat(tokenBalance)) {
+			setError(`Insufficient balance. Maximum: ${tokenBalance} ${tokenSymbol}`);
+			return;
+		}
+
 		setLoadingTx(true);
 		setTxHash("");
 		setError("");
-		// mint an NFT
-		const nftContractAddress = "0x9a7af758aE5d7B6aAE84fe4C5Ba67c041dFE5336";
-		const mintFunctionSignature = "mint(address)";
-		const mintFunctionSelector = getFunctionSelector(mintFunctionSignature);
-		const mintTransactionCallData = createCallData(
-			mintFunctionSelector,
-			["address"],
-			[accountAddress],
+		
+		// ERC-20 token transfer
+		const transferFunctionSignature = "transfer(address,uint256)";
+		const transferFunctionSelector = getFunctionSelector(transferFunctionSignature);
+		
+		// Convert amount to wei using actual token decimals
+		const amountInWei = parseUnits(transferAmount, tokenDecimals);
+		
+		const transferTransactionCallData = createCallData(
+			transferFunctionSelector,
+			["address", "uint256"],
+			[recipientAddress, amountInWei],
 		);
-		const mintTransaction: MetaTransaction = {
-			to: nftContractAddress,
+		const transferTransaction: MetaTransaction = {
+			to: erc20TokenAddress,
 			value: 0n,
-			data: mintTransactionCallData,
+			data: transferTransactionCallData,
 		};
 
 		const safeAccount = SafeAccount.initializeNewAccount([
@@ -77,7 +176,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 
 		try {
 			let userOperation = await safeAccount.createUserOperation(
-				[mintTransaction],
+				[transferTransaction],
 				jsonRPCProvider,
 				bundlerUrl,
 				{
@@ -106,12 +205,17 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 			if (userOperationReceiptResult.success) {
 				setTxHash(userOperationReceiptResult.receipt.transactionHash);
 				console.log(
-					"One NTF was minted. The transaction hash is : " +
+					"ERC-20 tokens transferred successfully. Transaction hash: " +
 						userOperationReceiptResult.receipt.transactionHash,
 				);
 				setUserOpHash("");
+				// Clear form after successful transfer
+				setRecipientAddress("");
+				setTransferAmount("");
+				// Refresh token balance
+				await fetchTokenInfo();
 			} else {
-				setError("Useroperation execution failed");
+				setError("User operation execution failed");
 			}
 		} catch (error) {
 			if (error instanceof Error) {
@@ -126,10 +230,11 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 
 	useEffect(() => {
 		if (accountAddress) {
-			async function isAccountDeployed() {
+			async function initializeAccountInfo() {
 				await isDeployed();
+				await fetchTokenInfo();
 			}
-			isAccountDeployed();
+			initializeAccountInfo();
 		}
 	}, [deployed, accountAddress]);
 
@@ -164,7 +269,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 			)}
 			{txHash && (
 				<>
-					You collected an NFT, secured with your Safe Account & authenticated
+					ERC-20 tokens transferred successfully! Transaction secured with your Safe Account & authenticated
 					by your Device Passkeys.
 					<br />
 					<br />
@@ -184,9 +289,82 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 				accountAddress && (
 					<div className="card">
 						<br />
-						<button onClick={handleMintNFT} disabled={!!userOpHash}>
-							Mint NFT
+						{/* Token Information Display */}
+						<div style={{ 
+							marginBottom: '20px', 
+							padding: '10px', 
+							backgroundColor: '#333', 
+							borderRadius: '8px',
+							border: '1px solid #555'
+						}}>
+							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+								<h3 style={{ margin: '0', color: '#fff' }}>Token Information</h3>
+								<button 
+									onClick={fetchTokenInfo}
+									disabled={loadingTokenInfo}
+									style={{ 
+										padding: '4px 8px', 
+										fontSize: '0.8em', 
+										backgroundColor: '#555', 
+										color: '#fff', 
+										border: '1px solid #777',
+										borderRadius: '4px',
+										cursor: loadingTokenInfo ? 'not-allowed' : 'pointer'
+									}}
+								>
+									{loadingTokenInfo ? '⟳' : '↻'} Refresh
+								</button>
+							</div>
+							{loadingTokenInfo ? (
+								<p style={{ margin: '5px 0', color: '#ccc' }}>Loading token information...</p>
+							) : (
+								<>
+									<p style={{ margin: '5px 0', color: '#ccc' }}>
+										<strong>Token:</strong> {tokenName} ({tokenSymbol})
+									</p>
+									<p style={{ margin: '5px 0', color: '#ccc' }}>
+										<strong>Your Balance:</strong> {tokenBalance} {tokenSymbol}
+									</p>
+									<p style={{ margin: '5px 0', color: '#999', fontSize: '0.9em' }}>
+										Contract: {erc20TokenAddress}
+									</p>
+								</>
+							)}
+						</div>
+						
+						{/* Transfer Form */}
+						<div style={{ marginBottom: '10px' }}>
+							<input
+								type="text"
+								placeholder="Recipient Address (0x...)"
+								value={recipientAddress}
+								onChange={(e) => setRecipientAddress(e.target.value)}
+								style={{ width: '100%', padding: '8px', marginBottom: '8px' }}
+								disabled={!!userOpHash}
+							/>
+							<input
+								type="number"
+								placeholder={`Amount (in ${tokenSymbol || 'tokens'})`}
+								value={transferAmount}
+								onChange={(e) => setTransferAmount(e.target.value)}
+								style={{ width: '100%', padding: '8px' }}
+								disabled={!!userOpHash}
+								min="0"
+								step="any"
+								max={tokenBalance}
+							/>
+						</div>
+						<button 
+							onClick={handleTransferERC20} 
+							disabled={!!userOpHash || !recipientAddress || !transferAmount || parseFloat(transferAmount || '0') > parseFloat(tokenBalance)}
+						>
+							Transfer {tokenSymbol || 'ERC-20'} Tokens
 						</button>
+						{parseFloat(transferAmount || '0') > parseFloat(tokenBalance) && transferAmount && (
+							<p style={{ color: '#ff6b6b', fontSize: '0.9em', marginTop: '5px' }}>
+								Insufficient balance. Maximum: {tokenBalance} {tokenSymbol}
+							</p>
+						)}
 					</div>
 				)
 			)}{" "}
