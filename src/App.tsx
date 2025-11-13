@@ -1,5 +1,4 @@
-import safeLogo from "/safe-logo-white.svg";
-import candideLogo from "/candide-atelier-logo.svg";
+import blessLogo from "/bless-logo.png";
 import {
 	PasskeyLocalStorageFormat,
 	createPasskey,
@@ -56,17 +55,14 @@ function App() {
 	return (
 		<>
 			<header className="header">
-				<a href="https://candide.dev" target="_blank">
-					<img src={candideLogo} className="logo" alt="Safe logo" />
-				</a>
 				<a href="https://safe.global" target="_blank">
-					<img src={safeLogo} className="logo" alt="Safe logo" />
+					<img src={blessLogo} className="logo" alt="Safe logo" />
 				</a>
 			</header>
-			<h1>Safe Passkeys Demo</h1>
+			<h1>Bless x Candide Demo</h1>
 			{content}
-			<br/>
-			<br/>
+			<br />
+			<br />
 		</>
 	);
 }

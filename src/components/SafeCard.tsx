@@ -19,7 +19,7 @@ const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
 const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
 const chainId = import.meta.env.VITE_CHAIN_ID;
 const chainName = import.meta.env.VITE_CHAIN_NAME as string;
-const erc20TokenAddress = "0xE0BD422189D77cD1AC77C520B363a7FA649FFdf1" as `0x${string}`;
+const erc20TokenAddress = "0xd077A400968890Eacc75cdc901F0356c943e4fDb" as `0x${string}`;
 
 // ERC-20 ABI for the functions we need
 const ERC20_ABI = [
@@ -68,25 +68,25 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	const [loadingTokenInfo, setLoadingTokenInfo] = useState<boolean>(false);
 	const [gasSponsor, setGasSponsor] = useState<
 		| {
-				name: string;
-				description: string;
-				url: string;
-				icons: string[];
-		  }
+			name: string;
+			description: string;
+			url: string;
+			icons: string[];
+		}
 		| undefined
 	>(undefined);
 
 	const accountAddress = getItem("accountAddress") as string;
 	const client = createPublicClient({
-	transport: http(import.meta.env.VITE_JSON_RPC_PROVIDER),
+		transport: http(import.meta.env.VITE_JSON_RPC_PROVIDER),
 	});
 
 	const isDeployed = async () => {
 		if (!accountAddress || !accountAddress.startsWith('0x')) {
-  			throw new Error(`Invalid address: ${accountAddress}`);
+			throw new Error(`Invalid address: ${accountAddress}`);
 		}
 
-		const safeCode = await getCode(client, { 
+		const safeCode = await getCode(client, {
 			address: accountAddress as `0x${string}`
 		});
 		setDeployed(safeCode !== null && safeCode !== '0x');
@@ -94,7 +94,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 
 	const fetchTokenInfo = async () => {
 		if (!accountAddress) return;
-		
+
 		setLoadingTokenInfo(true);
 		try {
 			// Fetch token info in parallel using viem readContract
@@ -121,7 +121,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					args: [accountAddress as `0x${string}`],
 				}),
 			]);
-			
+
 			setTokenName(name as string);
 			setTokenSymbol(symbol as string);
 			setTokenDecimals(Number(decimals));
@@ -151,14 +151,14 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		setLoadingTx(true);
 		setTxHash("");
 		setError("");
-		
+
 		// ERC-20 token transfer
 		const transferFunctionSignature = "transfer(address,uint256)";
 		const transferFunctionSelector = getFunctionSelector(transferFunctionSignature);
-		
+
 		// Convert amount to wei using actual token decimals
 		const amountInWei = parseUnits(transferAmount, tokenDecimals);
-		
+
 		const transferTransactionCallData = createCallData(
 			transferFunctionSelector,
 			["address", "uint256"],
@@ -206,7 +206,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 				setTxHash(userOperationReceiptResult.receipt.transactionHash);
 				console.log(
 					"ERC-20 tokens transferred successfully. Transaction hash: " +
-						userOperationReceiptResult.receipt.transactionHash,
+					userOperationReceiptResult.receipt.transactionHash,
 				);
 				setUserOpHash("");
 				// Clear form after successful transfer
@@ -261,7 +261,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					Track your operation on{" "}
 					<a
 						target="_blank"
-						href={`https://${chainName.toLowerCase()}.blockscout.com/op/${userOpHash}`}
+						href={`https://${chainName.toLowerCase()}.etherscan.io/tx/${userOpHash}`}
 					>
 						the block explorer
 					</a>
@@ -276,7 +276,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					View more on{" "}
 					<a
 						target="_blank"
-						href={`https://${chainName}.blockscout.com/tx/${txHash}`}
+						href={`https://${chainName}.etherscan.io/tx/${txHash}`}
 					>
 						the block explorer
 					</a>
@@ -290,23 +290,23 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					<div className="card">
 						<br />
 						{/* Token Information Display */}
-						<div style={{ 
-							marginBottom: '20px', 
-							padding: '10px', 
-							backgroundColor: '#333', 
+						<div style={{
+							marginBottom: '20px',
+							padding: '10px',
+							backgroundColor: '#333',
 							borderRadius: '8px',
 							border: '1px solid #555'
 						}}>
 							<div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
 								<h3 style={{ margin: '0', color: '#fff' }}>Token Information</h3>
-								<button 
+								<button
 									onClick={fetchTokenInfo}
 									disabled={loadingTokenInfo}
-									style={{ 
-										padding: '4px 8px', 
-										fontSize: '0.8em', 
-										backgroundColor: '#555', 
-										color: '#fff', 
+									style={{
+										padding: '4px 8px',
+										fontSize: '0.8em',
+										backgroundColor: '#555',
+										color: '#fff',
 										border: '1px solid #777',
 										borderRadius: '4px',
 										cursor: loadingTokenInfo ? 'not-allowed' : 'pointer'
@@ -326,12 +326,12 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 										<strong>Your Balance:</strong> {tokenBalance} {tokenSymbol}
 									</p>
 									<p style={{ margin: '5px 0', color: '#999', fontSize: '0.9em' }}>
-										Contract: {erc20TokenAddress}
+										Chain: {chainName}
 									</p>
 								</>
 							)}
 						</div>
-						
+
 						{/* Transfer Form */}
 						<div style={{ marginBottom: '10px' }}>
 							<input
@@ -354,8 +354,8 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 								max={tokenBalance}
 							/>
 						</div>
-						<button 
-							onClick={handleTransferERC20} 
+						<button
+							onClick={handleTransferERC20}
 							disabled={!!userOpHash || !recipientAddress || !transferAmount || parseFloat(transferAmount || '0') > parseFloat(tokenBalance)}
 						>
 							Transfer {tokenSymbol || 'ERC-20'} Tokens
