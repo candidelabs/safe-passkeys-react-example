@@ -15,12 +15,13 @@ async function createPasskey(): Promise<P256Credential> {
   let passkeyCredential = await createCredential({
     name: 'Safe Wallet',
     challenge: crypto.getRandomValues(new Uint8Array(32)),
-    rp: { 
+    rp: {
       id: window.location.hostname,
       name: 'Safe Wallet'
     },
     authenticatorSelection: {
-      authenticatorAttachment: 'platform',
+      // Removed authenticatorAttachment to support both platform (Touch ID, Face ID)
+      // and cross-platform authenticators (Google Password Manager, security keys)
       residentKey: 'required',
       userVerification: 'required',
     },
