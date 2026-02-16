@@ -48,6 +48,7 @@ function App() {
 				</a>
 			</header>
 			<div className="hero">
+				<span className="demo-badge">Live Demo</span>
 				<h1>Safe Unified Account</h1>
 				<p className="subtitle">
 					Give your users a single smart account across Ethereum, Optimism,

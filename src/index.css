@@ -1,11 +1,58 @@
+/* ==========================================
+   Design System: Precision Cartography
+   Deep navy · editorial typography · technical grid
+   ========================================== */
+
 :root {
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  /* Surfaces */
+  --bg-deep: #060a12;
+  --bg-surface: #0c1018;
+  --bg-card: rgba(12, 18, 28, 0.8);
+  --bg-elevated: rgba(18, 26, 40, 0.6);
+
+  /* Borders */
+  --border-subtle: rgba(255, 255, 255, 0.05);
+  --border-default: rgba(255, 255, 255, 0.08);
+  --border-strong: rgba(255, 255, 255, 0.14);
+
+  /* Brand */
+  --accent: #E70073;
+  --accent-end: #E8212E;
+  --accent-muted: rgba(231, 0, 115, 0.5);
+  --accent-subtle: rgba(231, 0, 115, 0.12);
+  --accent-surface: rgba(231, 0, 115, 0.06);
+
+  /* Semantic */
+  --success: #34d399;
+  --success-muted: rgba(52, 211, 153, 0.12);
+  --warning: #fbbf24;
+  --warning-muted: rgba(251, 191, 36, 0.12);
+  --error: #f87171;
+  --error-muted: rgba(248, 113, 113, 0.12);
+
+  /* Text */
+  --text-primary: rgba(255, 255, 255, 0.92);
+  --text-secondary: rgba(255, 255, 255, 0.55);
+  --text-tertiary: rgba(255, 255, 255, 0.32);
+
+  /* Typography */
+  --font-display: 'Instrument Serif', Georgia, serif;
+  --font-body: 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Fira Code', monospace;
+
+  /* Radii */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+
+  font-family: var(--font-body);
   line-height: 1.5;
   font-weight: 400;
 
   color-scheme: dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #181818;
+  color: var(--text-primary);
+  background-color: var(--bg-deep);
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -13,13 +60,19 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+* {
+  box-sizing: border-box;
+}
+
 a {
   font-weight: 500;
-  color: #E70073;
-  text-decoration: inherit;
+  color: var(--accent);
+  text-decoration: none;
+  transition: color 0.2s;
 }
+
 a:hover {
-  color: #E8212E;
+  color: var(--accent-end);
 }
 
 body {
@@ -28,41 +81,83 @@ body {
   justify-content: center;
   min-width: 320px;
   min-height: 100vh;
+  background-color: var(--bg-deep);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(231, 0, 115, 0.04) 0%, transparent 50%),
+    radial-gradient(circle, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 100% 100%, 32px 32px;
+  background-position: center top, 0 0;
 }
 
 .card {
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
+  position: relative;
+  padding: 2rem;
+  margin-bottom: 1.25rem;
+  background: var(--bg-card);
+  border: 1px solid var(--border-default);
+  border-radius: var(--radius-lg);
+  backdrop-filter: blur(12px);
+  overflow: hidden;
+}
+
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 15%;
+  right: 15%;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), var(--accent-end), transparent);
+  opacity: 0.5;
 }
 
 h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 3.6em;
+  font-weight: 400;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  margin: 0;
+}
 
-  @media screen and (max-width: 768px) {
-    font-size: 2.4em;
+@media screen and (max-width: 768px) {
+  h1 {
+    font-size: 2.6em;
   }
 }
 
+h2 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h3 {
+  font-family: var(--font-body);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
 button {
-  border-radius: 8px;
-  border: 1px solid transparent;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-default);
   padding: 0.6em 1.2em;
   font-size: 1em;
   font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
+  font-family: var(--font-body);
+  background-color: var(--bg-surface);
   cursor: pointer;
-  color: #ffffff;
-  transition: border-color 0.25s;
+  color: var(--text-primary);
+  transition: border-color 0.2s, background-color 0.2s, box-shadow 0.2s;
 }
+
 button:hover {
-  border-color: #E70073;
+  border-color: var(--accent);
 }
+
 button:focus,
 button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  outline: 2px solid var(--accent-muted);
+  outline-offset: 2px;
 }

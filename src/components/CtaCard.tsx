@@ -11,19 +11,19 @@ function CtaCard() {
 					href="https://docs.candide.dev/account-abstraction/research/safe-unified-account/"
 					target="_blank"
 				>
-					Read the docs
+					Read the docs →
 				</a>
 				<a
 					href="https://github.com/candidelabs/safe-unified-account-passkeys-react-example"
 					target="_blank"
 				>
-					View source
+					View source →
 				</a>
 				<a
 					href="https://cal.com/candidelabs/30mins"
 					target="_blank"
 				>
-					Schedule a call
+					Schedule a call →
 				</a>
 			</div>
 		</div>
