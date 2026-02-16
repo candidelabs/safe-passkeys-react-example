@@ -1,5 +1,5 @@
 #root {
-  max-width: 1280px;
+  max-width: 720px;
   margin: 0 auto;
   padding: 2rem;
 }
@@ -30,8 +30,521 @@
   }
 }
 .logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
+  filter: drop-shadow(0 0 2em rgba(231, 0, 115, 0.5));
 }
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+
+/* Hero section */
+.hero {
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+.subtitle {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 1.1rem;
+  max-width: 760px;
+  margin: 0.5rem auto 0;
+  line-height: 1.6;
+}
+
+/* Account card (PasskeyCard after creation) */
+.account-card {
+  text-align: center;
+}
+
+.account-card h2 {
+  font-size: 1.4rem;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.account-address {
+  display: block;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.82rem;
+  word-break: break-all;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  color: rgba(255, 255, 255, 0.8);
+}
+
+.address-hint {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.82rem;
+  margin: 0.75rem 0 0;
+  line-height: 1.5;
+}
+
+/* Chain badge pills */
+.chain-badges {
+  display: flex;
+  gap: 0.75rem;
+  justify-content: center;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.chain-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.45rem 1rem;
+  border: 1px solid rgba(231, 0, 115, 0.25);
+  border-radius: 999px;
+  font-size: 0.88rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.7);
+  text-decoration: none;
+  transition: border-color 0.2s, box-shadow 0.2s, color 0.2s;
+}
+
+.chain-badge:hover {
+  border-color: #E70073;
+  box-shadow: 0 0 12px rgba(231, 0, 115, 0.2);
+  color: #fff;
+}
+
+/* Tab bar */
+.tab-bar {
+  display: flex;
+  gap: 0;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.tab-button {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  padding: 0.75rem 1rem;
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.45);
+  cursor: pointer;
+  transition: color 0.2s, border-color 0.2s;
+  border-radius: 0;
+}
+
+.tab-button:hover {
+  color: rgba(255, 255, 255, 0.7);
+  border-color: transparent;
+}
+
+.tab-button.tab-active {
+  color: #fff;
+  border-bottom-color: #E70073;
+}
+
+/* Action card (SafeCard) */
+.action-card {
+  text-align: center;
+}
+
+.action-description {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 1rem;
+  margin: 0 0 1.25rem;
+}
+
+/* Primary button */
+.primary-button {
+  background: linear-gradient(135deg, #E70073, #E8212E);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 0.75rem 1.75rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: box-shadow 0.2s, opacity 0.2s;
+}
+
+.primary-button:hover {
+  box-shadow: 0 0 24px rgba(231, 0, 115, 0.35);
+  border-color: transparent;
+}
+
+.primary-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Step label (preparing / signing) */
+.step-label {
+  color: rgba(255, 255, 255, 0.7);
+  font-size: 1rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* Chain results — responsive grid */
+.chain-results {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+@media screen and (max-width: 768px) {
+  .chain-results {
+    flex-direction: column;
+  }
+}
+
+.chain-status-card {
+  flex: 1;
+  min-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 12px;
+  padding: 1.25rem;
+  text-align: left;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.chain-status-card strong {
+  font-size: 0.95rem;
+  display: block;
+  margin-bottom: 0.6rem;
+}
+
+.chain-status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* Status dot */
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.status-dot.pending {
+  background: #fbbf24;
+  box-shadow: 0 0 6px rgba(251, 191, 36, 0.5);
+}
+
+.status-dot.success {
+  background: #4ade80;
+  box-shadow: 0 0 6px rgba(74, 222, 128, 0.5);
+}
+
+.status-dot.error {
+  background: #ff6b6b;
+  box-shadow: 0 0 6px rgba(255, 107, 107, 0.5);
+}
+
+.chain-track-link {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.85rem;
+}
+
+/* Success banner */
+.success-banner {
+  background: rgba(74, 222, 128, 0.08);
+  border: 1px solid rgba(74, 222, 128, 0.25);
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-bottom: 1rem;
+}
+
+.success-banner p {
+  margin: 0 0 0.5rem;
+  color: #4ade80;
+  font-weight: 600;
+  font-size: 0.95rem;
+}
+
+/* Completion metrics */
+.completion-metrics {
+  display: flex;
+  gap: 1.5rem;
+  justify-content: center;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+}
+
+.metric {
+  text-align: center;
+}
+
+.metric-value {
+  display: block;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.metric-label {
+  display: block;
+  font-size: 0.8rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-top: 0.2rem;
+}
+
+.metric-contrast {
+  color: rgba(255, 255, 255, 0.4);
+  font-size: 0.85rem;
+  margin-top: 0.75rem;
+}
+
+.owner-address {
+  display: block;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.78rem;
+  word-break: break-all;
+  color: rgba(255, 255, 255, 0.65);
+}
+
+/* Section heading */
+.section-heading {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin: 0 0 1rem;
+}
+
+/* Owner / Guardian list */
+.owner-list {
+  margin-bottom: 1.5rem;
+}
+
+.owner-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.owner-label {
+  font-size: 0.9rem;
+  color: rgba(255, 255, 255, 0.7);
+  font-weight: 500;
+}
+
+.owner-item-address {
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.75rem;
+  word-break: break-all;
+  color: rgba(255, 255, 255, 0.65);
+  flex: 1;
+  min-width: 0;
+}
+
+.remove-button {
+  background: transparent;
+  border: 1px solid rgba(255, 107, 107, 0.35);
+  color: #ff6b6b;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s, border-color 0.2s;
+  flex-shrink: 0;
+}
+
+.remove-button:hover {
+  background: rgba(255, 107, 107, 0.1);
+  border-color: #ff6b6b;
+}
+
+/* Address input */
+.address-input-section {
+  margin-top: 0.25rem;
+}
+
+.address-input-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.address-input-row {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.address-input {
+  width: 100%;
+  padding: 0.65rem 1rem;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.85rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.address-input:focus {
+  border-color: rgba(231, 0, 115, 0.5);
+}
+
+.address-input::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.secondary-button {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  color: rgba(255, 255, 255, 0.6);
+  border-radius: 10px;
+  padding: 0.55rem 1.25rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 0.2s, color 0.2s;
+}
+
+.secondary-button:hover {
+  border-color: rgba(255, 255, 255, 0.35);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+/* Error message */
+.error-message {
+  margin-top: 1rem;
+  color: #ff6b6b;
+  font-size: 0.9rem;
+}
+
+.error-message p {
+  margin: 0;
+}
+
+/* CodeShowcase */
+.code-showcase {
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+}
+
+.code-showcase-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(231, 0, 115, 0.2);
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.8);
+  cursor: pointer;
+  width: 100%;
+  transition: border-color 0.2s, color 0.2s, background 0.2s;
+}
+
+.code-showcase-toggle:hover {
+  border-color: rgba(231, 0, 115, 0.45);
+  background: rgba(255, 255, 255, 0.06);
+  color: #fff;
+}
+
+.code-showcase-arrow {
+  transition: transform 0.2s;
+  font-size: 0.75rem;
+}
+
+.code-showcase-arrow.open {
+  transform: rotate(90deg);
+}
+
+.code-block {
+  margin-top: 0.75rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 1.25rem;
+  overflow-x: auto;
+}
+
+.code-block pre {
+  margin: 0;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.8rem;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.8);
+  white-space: pre;
+}
+
+.code-block .code-comment {
+  color: rgba(255, 255, 255, 0.35);
+}
+
+.code-block .code-keyword {
+  color: #E70073;
+}
+
+.code-block .code-string {
+  color: #4ade80;
+}
+
+.code-block .code-fn {
+  color: #fbbf24;
+}
+
+/* CTA Card */
+.cta-card {
+  text-align: center;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  padding: 2rem 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(231, 0, 115, 0.2);
+  border-radius: 16px;
+}
+
+.cta-card h3 {
+  font-size: 1.3rem;
+  margin: 0 0 1rem;
+  font-weight: 600;
+}
+
+.cta-install {
+  display: inline-block;
+  font-family: "SF Mono", "Fira Code", "Fira Mono", "Roboto Mono", monospace;
+  font-size: 0.9rem;
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  padding: 0.6rem 1.2rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin-bottom: 1.25rem;
+}
+
+.cta-links {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1rem;
+}
+
+.cta-links a {
+  font-size: 0.95rem;
+  font-weight: 500;
 }

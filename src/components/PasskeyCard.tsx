@@ -1,10 +1,9 @@
 import { useMemo } from 'react'
-import { SafeAccountV0_3_0 as SafeAccount } from 'abstractionkit'
+import { SafeMultiChainSigAccount as SafeAccount } from 'abstractionkit'
 
 import { PasskeyLocalStorageFormat } from '../logic/passkeys'
 import { setItem } from '../logic/storage'
-
-const chainName = import.meta.env.VITE_CHAIN_NAME as string;
+import { chains } from '../logic/chains'
 
 function PasskeyCard({ passkey, handleCreatePasskeyClick }: { passkey?: PasskeyLocalStorageFormat; handleCreatePasskeyClick: () => void }) {
   const getAccountAddress = useMemo(() => {
@@ -17,20 +16,29 @@ function PasskeyCard({ passkey, handleCreatePasskeyClick }: { passkey?: PasskeyL
   }, [passkey])
 
   return passkey ? (
-	<div className="card">
-		<p>Account Address: {" "}
-      <a
-        target="_blank"
-        href={`https://${chainName}.blockscout.com/address/${getAccountAddress}`}
-      >
-        {getAccountAddress}
-      </a>
-    </p>
-	</div>
-) : (
-    <div className="card">
-      <p>First, you need to create a passkey which will be used to sign transactions</p>
-      <button onClick={handleCreatePasskeyClick}>Create Account</button>
+    <div className="card account-card">
+      <h2>One Account. Every Chain.</h2>
+      <code className="account-address">{getAccountAddress}</code>
+      <p className="address-hint">
+        This address was derived locally from your passkey, no network calls needed.
+      </p>
+      <div className="chain-badges">
+        {chains.map((chain, i) => (
+          <a
+            key={i}
+            className="chain-badge"
+            target="_blank"
+            href={`${chain.explorerUrl}/address/${getAccountAddress}`}
+          >
+            {chain.chainName} ↗
+          </a>
+        ))}
+      </div>
+    </div>
+  ) : (
+    <div className="card" style={{ textAlign: "center" }}>
+      <p>Create a passkey to generate your multichain account</p>
+      <button className="primary-button" onClick={handleCreatePasskeyClick}>Create Account</button>
     </div>
   )
 }
