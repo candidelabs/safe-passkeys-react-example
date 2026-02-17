@@ -10,8 +10,6 @@ import { useLocalStorageState } from "./hooks/useLocalStorageState.ts";
 import { useState } from "react";
 import { PasskeyCard } from "./components/PasskeyCard.tsx";
 import { SafeCard } from "./components/SafeCard.tsx";
-import { CodeShowcase } from "./components/CodeShowcase.tsx";
-import { CtaCard } from "./components/CtaCard.tsx";
 import { FaqCard } from "./components/FaqCard.tsx";
 
 const PASSKEY_LOCALSTORAGE_KEY = "passkeyId";
@@ -37,26 +35,8 @@ function App() {
 		}
 	};
 
-	return (
+	let content = (
 		<>
-			<header className="header">
-				<a href="https://candide.dev" target="_blank">
-					<img src={candideLogo} className="logo" alt="Candide Atelier logo" />
-				</a>
-				<a href="https://safe.global" target="_blank">
-					<img src={safeLogo} className="logo" alt="Safe logo" />
-				</a>
-			</header>
-			<div className="hero">
-				<h1>Safe Unified Account</h1>
-				<p className="subtitle">
-					Give your users a single smart account across Ethereum, Optimism,
-					Arbitrum, and more.
-					<br />
-					One passkey. One signature. Execute across every chain.
-				</p>
-			</div>
-
 			<PasskeyCard
 				passkey={passkey}
 				handleCreatePasskeyClick={handleCreatePasskeyClick}
@@ -69,10 +49,24 @@ function App() {
 					<p>Error: {error}</p>
 				</div>
 			)}
-
-			<CodeShowcase />
-			<CtaCard />
 			<FaqCard />
+		</>
+	);
+
+	return (
+		<>
+			<header className="header">
+				<a href="https://candide.dev" target="_blank">
+					<img src={candideLogo} className="logo" alt="Safe logo" />
+				</a>
+				<a href="https://safe.global" target="_blank">
+					<img src={safeLogo} className="logo" alt="Safe logo" />
+				</a>
+			</header>
+			<h1>Safe Passkeys Demo</h1>
+			{content}
+			<br/>
+			<br/>
 		</>
 	);
 }

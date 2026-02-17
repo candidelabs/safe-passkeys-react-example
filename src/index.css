@@ -3,9 +3,9 @@
   line-height: 1.5;
   font-weight: 400;
 
-  color-scheme: dark;
+  color-scheme: light dark;
   color: rgba(255, 255, 255, 0.87);
-  background-color: #181818;
+  background-color: #242424;
 
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -15,27 +15,19 @@
 
 a {
   font-weight: 500;
-  color: #E70073;
+  color: #646cff;
   text-decoration: inherit;
 }
 a:hover {
-  color: #E8212E;
+  color: #535bf2;
 }
 
 body {
   margin: 0;
   display: flex;
-  justify-content: center;
+  justify-content: flex-start;
   min-width: 320px;
   min-height: 100vh;
-}
-
-.card {
-  padding: 1.5rem;
-  margin-bottom: 1rem;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 16px;
 }
 
 h1 {
@@ -60,7 +52,7 @@ button {
   transition: border-color 0.25s;
 }
 button:hover {
-  border-color: #E70073;
+  border-color: #646cff;
 }
 button:focus,
 button:focus-visible {

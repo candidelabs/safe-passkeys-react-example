@@ -2,80 +2,53 @@ import { sign } from 'ox/WebAuthnP256';
 import { Hex as OxHex } from 'ox/Hex'
 import { Bytes, Hex } from 'ox'
 import {
-  SafeMultiChainSigAccount as SafeAccount,
-  AllowAllPaymaster,
+  SafeAccountV0_3_0 as SafeAccount,
   SignerSignaturePair,
   WebauthnSignatureData,
   SendUseroperationResponse,
-  UserOperationV9,
+  UserOperationV7,
 } from 'abstractionkit'
 
-import {
+import { 
   PasskeyLocalStorageFormat
 } from './passkeys'
 
-export interface MultiChainUserOpInput {
-  userOp: UserOperationV9;
-  chainId: bigint;
-  bundlerUrl: string;
-}
-
 /**
- * Signs N UserOperations on multiple chains with a single passkey authentication
- * and sends them to their respective bundlers.
+ * Signs a SafeAccount UserOperation using Ox/WebAuthnP256 and sends it to the bundler.
  *
  * Workflow:
- * 1. Build userOperationsToSign array for all chains.
- * 2. Compute multichain Merkle root hash via getMultiChainSingleSignatureUserOperationsEip712Hash().
- * 3. Sign once with WebAuthn (single biometric prompt).
- * 4. Expand the single signature into per-chain signatures via formatSignaturesToUseroperationsSignatures().
- * 5. Apply AllowAllPaymaster data (must happen after signatures are set).
- * 6. Send all UserOperations concurrently.
+ * 1. Compute the EIP-712 hash of the UserOperation.
+ * 2. Call Ox `sign()` with the stored credential ID to obtain the raw WebAuthn signature and metadata.
+ * 3. Extract any extra clientDataJSON fields beyond the challenge.
+ * 4. Build a WebauthnSignatureData object for SafeAccount.
+ * 5. Generate the final EIP-4337 signature via SafeAccount API.
+ * 6. Embed the signature in the UserOperation and dispatch it.
+ *
+ * @param smartAccount - Initialized SafeAccount instance.
+ * @param userOp - The unsigned UserOperationV7.
+ * @param passkey - LocalStorage passkey containing `id` and public-key coords.
+ * @param chainId - Chain ID (bigint|string|number) for EIP-712 domain.
+ * @param bundlerUrl - URL of the bundler endpoint.
+ * @returns A promise resolving to the SendUseroperationResponse.
+ * @throws If the WebAuthn metadata format is invalid.
  */
-async function signAndSendMultiChainUserOps(
-  ops: MultiChainUserOpInput[],
+async function signAndSendUserOp(
+  smartAccount: SafeAccount,
+  userOp: UserOperationV7,
   passkey: PasskeyLocalStorageFormat,
-): Promise<SendUseroperationResponse[]> {
-  const userOperationsToSign = ops.map((op) => ({
-    userOperation: op.userOp,
-    chainId: op.chainId,
-  }));
+  chainId: bigint | string | number = import.meta.env.VITE_CHAIN_ID,
+  bundlerUrl: string = import.meta.env.VITE_BUNDLER_URL,
+): Promise<SendUseroperationResponse> {
+    // 1. EIP-712 hash for the UserOperation
+  const safeInitOpHash = SafeAccount.getUserOperationEip712Hash(userOp, BigInt(chainId)) ;
 
-  // Debug: log per-chain UserOp data before signing
-  console.log('[multichain] chains:', ops.map(op => op.chainId.toString()));
-  ops.forEach((op, i) => {
-    const uo = op.userOp;
-    console.log(`[multichain] chain ${op.chainId} userOp:`, {
-      sender: uo.sender,
-      nonce: uo.nonce.toString(),
-      callDataLen: uo.callData.length,
-      callGasLimit: uo.callGasLimit.toString(),
-      verificationGasLimit: uo.verificationGasLimit.toString(),
-      preVerificationGas: uo.preVerificationGas.toString(),
-      maxFeePerGas: uo.maxFeePerGas.toString(),
-      maxPriorityFeePerGas: uo.maxPriorityFeePerGas.toString(),
-      factory: uo.factory,
-      paymaster: uo.paymaster,
-      paymasterData: uo.paymasterData,
-    });
-  });
-
-  // 1. Multichain Merkle root hash
-  const multiChainHash = SafeAccount.getMultiChainSingleSignatureUserOperationsEip712Hash(
-    userOperationsToSign,
-  );
-
-  console.log('[multichain] multiChainHash:', multiChainHash);
-
-  // 2. Sign with passkey (single biometric prompt)
+  // 2. Sign via Ox/WebAuthnP256
   const { metadata, signature } = await sign({
-    challenge: multiChainHash as OxHex,
+    challenge: safeInitOpHash as OxHex,
     credentialId: passkey.id as OxHex,
   });
 
   // 3. Extract additional clientDataJSON fields (post-challenge)
-  console.log('[multichain] clientDataJSON:', metadata.clientDataJSON);
-
   const clientDataMatch = metadata.clientDataJSON.match(
     /^\{"type":"webauthn.get","challenge":"[A-Za-z0-9\-_]{43}",(.*)\}$/,
   );
@@ -84,81 +57,31 @@ async function signAndSendMultiChainUserOps(
   }
   const [, fields] = clientDataMatch;
 
-  // 4. Assemble WebauthnSignatureData
+  // 4. Assemble WebauthnSignatureData for SafeAccount
   const webauthnSignatureData: WebauthnSignatureData = {
     authenticatorData: Bytes.fromHex(metadata.authenticatorData)
       .buffer as ArrayBuffer,
     clientDataFields: Hex.fromString(fields),
     rs: [signature.r, signature.s],
   };
-
+  
+  // 5. Create the final Safe EIP-4337 signature
   const webauthSignature = SafeAccount.createWebAuthnSignature(
     webauthnSignatureData,
   );
 
+  // 6. Attach to UserOperation and send
   const signerSignaturePair: SignerSignaturePair = {
     signer: passkey.pubkeyCoordinates,
     signature: webauthSignature,
   };
-
-  // 5. Format single signature into per-UserOperation signatures
-  const isInit = ops[0].userOp.nonce == 0n;
-  console.log('[multichain] isInit:', isInit);
-
-  const signatures = SafeAccount.formatSignaturesToUseroperationsSignatures(
-    userOperationsToSign,
+  userOp.signature = SafeAccount.formatSignaturesToUseroperationSignature(
     [signerSignaturePair],
-    { isInit },
+    { isInit: userOp.nonce === 0n },
   );
 
-  ops.forEach((op, i) => {
-    op.userOp.signature = signatures[i];
-    console.log(`[multichain] chain ${op.chainId} signature length:`, signatures[i].length);
-  });
-
-  // 6. Apply paymaster data (can happen during or after signatures are set)
-  const paymaster = new AllowAllPaymaster();
-  const paymasterResults = await Promise.all(
-    ops.map((op) => paymaster.getApprovedPaymasterData(op.userOp)),
-  );
-
-  ops.forEach((op, i) => {
-    op.userOp.paymasterData = paymasterResults[i];
-  });
-
-  // 7. Send all UserOperations — use allSettled to see per-chain results
-  const results = await Promise.allSettled(
-    ops.map((op) => {
-      const sender = new SafeAccount(op.userOp.sender);
-      return sender.sendUserOperation(op.userOp, op.bundlerUrl);
-    }),
-  );
-
-  // Log per-chain send results
-  const responses: SendUseroperationResponse[] = [];
-  const errors: string[] = [];
-  results.forEach((result, i) => {
-    if (result.status === 'fulfilled') {
-      console.log(`[multichain] chain ${ops[i].chainId} SENT OK:`, result.value.userOperationHash);
-      responses.push(result.value);
-    } else {
-      const err = result.reason;
-      // Log the full error object to see all properties
-      console.error(`[multichain] chain ${ops[i].chainId} FAILED — full error:`, err);
-      console.error(`[multichain] chain ${ops[i].chainId} error keys:`, err ? Object.keys(err) : 'null');
-      console.error(`[multichain] chain ${ops[i].chainId} JSON:`, JSON.stringify(err, Object.getOwnPropertyNames(err || {})));
-      const errMsg = err?.message || err?.toString() || 'Unknown error';
-      errors.push(`Chain ${ops[i].chainId}: ${errMsg}`);
-    }
-  });
-
-  if (errors.length > 0) {
-    // If some chains succeeded but others failed, log it clearly
-    console.error(`[multichain] ${errors.length}/${ops.length} chains failed:`, errors);
-    throw new Error(errors.join('\n'));
-  }
-
-  return responses;
+  return smartAccount.sendUserOperation(userOp, bundlerUrl);
 }
 
-export { signAndSendMultiChainUserOps }
+export { signAndSendUserOp }
+
