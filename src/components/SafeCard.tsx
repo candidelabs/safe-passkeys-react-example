@@ -104,20 +104,27 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		<div className="card">
 			{step.kind === "pending" && (
 				<p>
-					Your account setup is in progress. This operation gas is sponsored by{" "}
-					{step.sponsor?.name}
-					<a
-						href={step.sponsor?.url}
-						target="_blank"
-						rel="noopener noreferrer"
-						style={{ marginLeft: "5px" }}
-					>
-						<img
-							src={step.sponsor?.icons[0]}
-							alt="logo"
-							style={{ width: "25px", height: "25px", verticalAlign: "middle" }}
-						/>
-					</a>
+					Your account setup is in progress.
+					{step.sponsor && (
+						<>
+							{" "}
+							This operation gas is sponsored by {step.sponsor.name}
+							{step.sponsor.icons[0] && (
+								<a
+									href={step.sponsor.url || undefined}
+									target="_blank"
+									rel="noopener noreferrer"
+									style={{ marginLeft: "5px" }}
+								>
+									<img
+										src={step.sponsor.icons[0]}
+										alt={`${step.sponsor.name} logo`}
+										style={{ width: "25px", height: "25px", verticalAlign: "middle" }}
+									/>
+								</a>
+							)}
+						</>
+					)}
 					<br />
 					<br />
 					Track your operation on{" "}
@@ -133,7 +140,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 
 			{step.kind === "success" && (
 				<>
-					You collected an NTF, secured with your Safe Account & authenticated
+					You collected an NFT, secured with your Safe Account & authenticated
 					by your Device Passkeys.
 					<br />
 					<br />
@@ -149,7 +156,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 				</>
 			)}
 
-			{step.kind === "preparing" && <p>"Preparing transaction.."</p>}
+			{step.kind === "preparing" && <p>Preparing transaction…</p>}
 
 			{(step.kind === "idle" || step.kind === "success" || step.kind === "error") && (
 				<div className="card">
