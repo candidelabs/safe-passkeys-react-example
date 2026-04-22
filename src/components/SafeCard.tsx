@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import {
 	SafeAccountV0_3_0 as SafeAccount,
 	getFunctionSelector,
@@ -7,7 +7,7 @@ import {
 } from "abstractionkit";
 import type { MetaTransaction } from "abstractionkit";
 
-import { PasskeyLocalStorageFormat } from "../logic/passkeys";
+import type { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
 import {
 	chainId,
@@ -16,12 +16,9 @@ import {
 	jsonRpcProvider,
 	paymasterUrl,
 } from "../logic/config";
-import { createPublicClient, http } from 'viem';
-import { getCode } from 'viem/actions';
 
 function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	const [userOpHash, setUserOpHash] = useState<string>();
-	const [deployed, setDeployed] = useState<boolean>(false);
 	const [loadingTx, setLoadingTx] = useState<boolean>(false);
 	const [error, setError] = useState<string>();
 	const [txHash, setTxHash] = useState<string>();
@@ -39,20 +36,6 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		() => SafeAccount.createAccountAddress([passkey.pubkeyCoordinates]),
 		[passkey.pubkeyCoordinates],
 	);
-	const client = createPublicClient({
-		transport: http(jsonRpcProvider),
-	});
-
-	const isDeployed = async () => {
-		if (!accountAddress || !accountAddress.startsWith('0x')) {
-  			throw new Error(`Invalid address: ${accountAddress}`);
-		}
-
-		const safeCode = await getCode(client, { 
-			address: accountAddress as `0x${string}`
-		});
-		setDeployed(safeCode !== null && safeCode !== '0x');
-	};
 
 	const handleMintNFT = async () => {
 		setLoadingTx(true);
@@ -127,15 +110,6 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		}
 		setLoadingTx(false);
 	};
-
-	useEffect(() => {
-		if (accountAddress) {
-			async function isAccountDeployed() {
-				await isDeployed();
-			}
-			isAccountDeployed();
-		}
-	}, [deployed, accountAddress]);
 
 	return (
 		<div className="card">
