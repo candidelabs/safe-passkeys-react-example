@@ -3,9 +3,9 @@ import {
 	SafeAccountV0_3_0 as SafeAccount,
 	getFunctionSelector,
 	createCallData,
-	MetaTransaction,
 	CandidePaymaster,
 } from "abstractionkit";
+import type { MetaTransaction } from "abstractionkit";
 
 import { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
@@ -90,6 +90,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 			let paymaster: CandidePaymaster = new CandidePaymaster(paymasterUrl);
 			let [userOperationSponsored, sponsorMetadata] =
 				await paymaster.createSponsorPaymasterUserOperation(
+					safeAccount,
 					userOperation,
 					bundlerUrl,
 				);
@@ -103,7 +104,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 			);
 			setUserOpHash(bundlerResponse.userOperationHash);
 			let userOperationReceiptResult = await bundlerResponse.included();
-			if (userOperationReceiptResult.success) {
+			if (userOperationReceiptResult && userOperationReceiptResult.success) {
 				setTxHash(userOperationReceiptResult.receipt.transactionHash);
 				console.log(
 					"One NTF was minted. The transaction hash is : " +

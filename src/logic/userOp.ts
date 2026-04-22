@@ -3,9 +3,11 @@ import { Hex as OxHex } from 'ox/Hex'
 import { Bytes, Hex } from 'ox'
 import {
   SafeAccountV0_3_0 as SafeAccount,
+  SendUseroperationResponse,
+} from 'abstractionkit'
+import type {
   SignerSignaturePair,
   WebauthnSignatureData,
-  SendUseroperationResponse,
   UserOperationV7,
 } from 'abstractionkit'
 
