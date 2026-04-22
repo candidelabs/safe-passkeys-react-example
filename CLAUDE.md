@@ -31,7 +31,6 @@ React + TypeScript + Vite app demonstrating WebAuthn passkeys as the owner of a 
 - **abstractionkit** - Safe account abstraction, `SafeAccountV0_3_0`, `CandidePaymaster`
 - **ox** (^0.8.4) - WebAuthn P-256 credential creation and signing
 - **react-faq-component** - FAQ UI
-- **buffer** - Node.js Buffer polyfill (legacy; evaluate before removing)
 
 ### Environment Configuration
 
