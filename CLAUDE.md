@@ -6,7 +6,6 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 - `npm run dev` - Start development server with Vite
 - `npm run build` - Build for production (runs TypeScript check then Vite build)
-- `npm run lint` - Run ESLint with TypeScript extensions
 - `npm run preview` - Preview production build locally
 
 ## Architecture Overview
