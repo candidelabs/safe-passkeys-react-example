@@ -27,6 +27,7 @@ type SponsorMetadata = {
 type Step =
 	| { kind: "idle" }
 	| { kind: "preparing" }
+	| { kind: "signing" }
 	| { kind: "pending"; userOpHash: string; sponsor?: SponsorMetadata }
 	| { kind: "success"; txHash: string }
 	| { kind: "error"; message: string };
@@ -74,6 +75,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					bundlerUrl,
 				);
 
+			setStep({ kind: "signing" });
 			const bundlerResponse = await signAndSendUserOp(
 				safeAccount,
 				sponsoredOp,
@@ -157,6 +159,8 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 			)}
 
 			{step.kind === "preparing" && <p>Preparing transaction…</p>}
+
+			{step.kind === "signing" && <p>Authenticate with your passkey…</p>}
 
 			{(step.kind === "idle" || step.kind === "success" || step.kind === "error") && (
 				<div className="card">
