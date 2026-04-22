@@ -35,6 +35,22 @@ async function createPasskey(): Promise<P256Credential> {
   return passkeyCredential
 }
 
+/**
+ * Shape persisted per passkey.
+ *
+ * `pubkeyCoordinates` (x, y) is required on every session because:
+ *   1. It's the input to `SafeAccount.createAccountAddress` — the only way
+ *      to derive the account address before the Safe is deployed.
+ *   2. It identifies this owner when formatting the WebAuthn signature for
+ *      the Safe.
+ *   3. WebAuthn only returns the public key at *registration* time; the
+ *      assertion response from `navigator.credentials.get()` does not
+ *      include it. Something must remember it.
+ *
+ * DEMO SHORTCUT — we persist (x, y) in localStorage. See App.tsx for why
+ * that's not a production pattern. Back-end index or `userHandle` packing
+ * are the production alternatives.
+ */
 export type PasskeyLocalStorageFormat = {
   id: string
   pubkeyCoordinates: {
@@ -44,10 +60,7 @@ export type PasskeyLocalStorageFormat = {
 }
 
 /**
- * Converts a P256Credential into a format suitable for storing in localStorage.
- *
- * @param passkey - The P256Credential returned from WebAuthn.
- * @returns An object containing `id` and `pubkeyCoordinates` ready for JSON.stringify.
+ * Converts a P256Credential into the persisted shape.
  */
 function toLocalStorageFormat(passkey: P256Credential): PasskeyLocalStorageFormat {
   return {
