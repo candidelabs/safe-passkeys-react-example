@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
 	SafeAccountV0_3_0 as SafeAccount,
 	getFunctionSelector,
@@ -9,7 +9,6 @@ import type { MetaTransaction } from "abstractionkit";
 
 import { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
-import { getItem } from "../logic/storage";
 import {
 	chainId,
 	chainName,
@@ -36,7 +35,10 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		| undefined
 	>(undefined);
 
-	const accountAddress = getItem("accountAddress") as string;
+	const accountAddress = useMemo(
+		() => SafeAccount.createAccountAddress([passkey.pubkeyCoordinates]),
+		[passkey.pubkeyCoordinates],
+	);
 	const client = createPublicClient({
 		transport: http(jsonRpcProvider),
 	});
