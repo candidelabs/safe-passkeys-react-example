@@ -96,6 +96,11 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 				setStep({ kind: "error", message: "UserOperation execution failed" });
 			}
 		} catch (err) {
+			// User dismissed the passkey prompt — not an error, just back out quietly.
+			if (err instanceof DOMException && err.name === "NotAllowedError") {
+				setStep({ kind: "idle" });
+				return;
+			}
 			console.error(err);
 			const message = err instanceof Error ? err.message : "Unknown error";
 			setStep({ kind: "error", message });
