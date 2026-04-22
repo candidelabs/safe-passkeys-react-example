@@ -11,9 +11,10 @@ import type {
   UserOperationV7,
 } from 'abstractionkit'
 
-import { 
+import {
   PasskeyLocalStorageFormat
 } from './passkeys'
+import { chainId as defaultChainId, bundlerUrl as defaultBundlerUrl } from './config'
 
 /**
  * Signs a SafeAccount UserOperation using Ox/WebAuthnP256 and sends it to the bundler.
@@ -38,8 +39,8 @@ async function signAndSendUserOp(
   smartAccount: SafeAccount,
   userOp: UserOperationV7,
   passkey: PasskeyLocalStorageFormat,
-  chainId: bigint | string | number = import.meta.env.VITE_CHAIN_ID,
-  bundlerUrl: string = import.meta.env.VITE_BUNDLER_URL,
+  chainId: bigint | string | number = defaultChainId,
+  bundlerUrl: string = defaultBundlerUrl,
 ): Promise<SendUseroperationResponse> {
     // 1. EIP-712 hash for the UserOperation
   const safeInitOpHash = SafeAccount.getUserOperationEip712Hash(userOp, BigInt(chainId)) ;

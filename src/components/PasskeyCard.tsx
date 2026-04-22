@@ -3,8 +3,7 @@ import { SafeAccountV0_3_0 as SafeAccount } from 'abstractionkit'
 
 import { PasskeyLocalStorageFormat } from '../logic/passkeys'
 import { setItem } from '../logic/storage'
-
-const chainName = import.meta.env.VITE_CHAIN_NAME as string;
+import { chainName } from '../logic/config'
 
 function PasskeyCard({ passkey, handleCreatePasskeyClick }: { passkey?: PasskeyLocalStorageFormat; handleCreatePasskeyClick: () => void }) {
   const getAccountAddress = useMemo(() => {

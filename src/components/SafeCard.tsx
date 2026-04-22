@@ -10,15 +10,15 @@ import type { MetaTransaction } from "abstractionkit";
 import { PasskeyLocalStorageFormat } from "../logic/passkeys";
 import { signAndSendUserOp } from "../logic/userOp";
 import { getItem } from "../logic/storage";
+import {
+	chainId,
+	chainName,
+	bundlerUrl,
+	jsonRpcProvider,
+	paymasterUrl,
+} from "../logic/config";
 import { createPublicClient, http } from 'viem';
 import { getCode } from 'viem/actions';
-
-
-const jsonRPCProvider = import.meta.env.VITE_JSON_RPC_PROVIDER;
-const bundlerUrl = import.meta.env.VITE_BUNDLER_URL;
-const paymasterUrl = import.meta.env.VITE_PAYMASTER_URL;
-const chainId = import.meta.env.VITE_CHAIN_ID;
-const chainName = import.meta.env.VITE_CHAIN_NAME as string;
 
 function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	const [userOpHash, setUserOpHash] = useState<string>();
@@ -38,7 +38,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 
 	const accountAddress = getItem("accountAddress") as string;
 	const client = createPublicClient({
-	transport: http(import.meta.env.VITE_JSON_RPC_PROVIDER),
+		transport: http(jsonRpcProvider),
 	});
 
 	const isDeployed = async () => {
@@ -78,7 +78,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		try {
 			let userOperation = await safeAccount.createUserOperation(
 				[mintTransaction],
-				jsonRPCProvider,
+				jsonRpcProvider,
 				bundlerUrl,
 				{
 					expectedSigners: [passkey.pubkeyCoordinates],
