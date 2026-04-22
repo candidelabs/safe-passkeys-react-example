@@ -1,10 +1,7 @@
 import safeLogo from "/safe-logo-white.svg";
 import candideLogo from "/candide-atelier-logo.svg";
-import {
-	PasskeyLocalStorageFormat,
-	createPasskey,
-	toLocalStorageFormat,
-} from "./logic/passkeys.ts";
+import { createPasskey, toLocalStorageFormat } from "./logic/passkeys.ts";
+import type { PasskeyLocalStorageFormat } from "./logic/passkeys.ts";
 import "./App.css";
 import { useLocalStorageState } from "./hooks/useLocalStorageState.ts";
 import { useState } from "react";
