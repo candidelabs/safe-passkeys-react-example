@@ -17,20 +17,22 @@ import {
 	paymasterUrl,
 } from "../logic/config";
 
+type SponsorMetadata = {
+	name: string;
+	description: string;
+	url: string;
+	icons: string[];
+};
+
+type Step =
+	| { kind: "idle" }
+	| { kind: "preparing" }
+	| { kind: "pending"; userOpHash: string; sponsor?: SponsorMetadata }
+	| { kind: "success"; txHash: string }
+	| { kind: "error"; message: string };
+
 function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
-	const [userOpHash, setUserOpHash] = useState<string>();
-	const [loadingTx, setLoadingTx] = useState<boolean>(false);
-	const [error, setError] = useState<string>();
-	const [txHash, setTxHash] = useState<string>();
-	const [gasSponsor, setGasSponsor] = useState<
-		| {
-				name: string;
-				description: string;
-				url: string;
-				icons: string[];
-		  }
-		| undefined
-	>(undefined);
+	const [step, setStep] = useState<Step>({ kind: "idle" });
 
 	const accountAddress = useMemo(
 		() => SafeAccount.createAccountAddress([passkey.pubkeyCoordinates]),
@@ -38,22 +40,14 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 	);
 
 	const handleMintNFT = async () => {
-		setLoadingTx(true);
-		setTxHash("");
-		setError("");
-		// mint an NFT
+		setStep({ kind: "preparing" });
+
 		const nftContractAddress = "0x9a7af758aE5d7B6aAE84fe4C5Ba67c041dFE5336";
-		const mintFunctionSignature = "mint(address)";
-		const mintFunctionSelector = getFunctionSelector(mintFunctionSignature);
-		const mintTransactionCallData = createCallData(
-			mintFunctionSelector,
-			["address"],
-			[accountAddress],
-		);
+		const mintFunctionSelector = getFunctionSelector("mint(address)");
 		const mintTransaction: MetaTransaction = {
 			to: nftContractAddress,
 			value: 0n,
-			data: mintTransactionCallData,
+			data: createCallData(mintFunctionSelector, ["address"], [accountAddress]),
 		};
 
 		const safeAccount = SafeAccount.initializeNewAccount([
@@ -61,7 +55,7 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 		]);
 
 		try {
-			let userOperation = await safeAccount.createUserOperation(
+			const unsignedOp = await safeAccount.createUserOperation(
 				[mintTransaction],
 				jsonRpcProvider,
 				bundlerUrl,
@@ -72,59 +66,54 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 				},
 			);
 
-			let paymaster: CandidePaymaster = new CandidePaymaster(paymasterUrl);
-			let [userOperationSponsored, sponsorMetadata] =
+			const paymaster = new CandidePaymaster(paymasterUrl);
+			const [sponsoredOp, sponsor] =
 				await paymaster.createSponsorPaymasterUserOperation(
 					safeAccount,
-					userOperation,
+					unsignedOp,
 					bundlerUrl,
 				);
-			setGasSponsor(sponsorMetadata);
-			userOperation = userOperationSponsored;
+
 			const bundlerResponse = await signAndSendUserOp(
 				safeAccount,
-				userOperation,
+				sponsoredOp,
 				passkey,
 				chainId,
 				bundlerUrl,
 			);
-			setUserOpHash(bundlerResponse.userOperationHash);
-			let userOperationReceiptResult = await bundlerResponse.included();
-			if (userOperationReceiptResult && userOperationReceiptResult.success) {
-				setTxHash(userOperationReceiptResult.receipt.transactionHash);
-				console.log(
-					"One NTF was minted. The transaction hash is : " +
-						userOperationReceiptResult.receipt.transactionHash,
-				);
-				setUserOpHash("");
+			setStep({
+				kind: "pending",
+				userOpHash: bundlerResponse.userOperationHash,
+				sponsor,
+			});
+
+			const receipt = await bundlerResponse.included();
+			if (receipt && receipt.success) {
+				setStep({ kind: "success", txHash: receipt.receipt.transactionHash });
 			} else {
-				setError("Useroperation execution failed");
+				setStep({ kind: "error", message: "UserOperation execution failed" });
 			}
-		} catch (error) {
-			if (error instanceof Error) {
-				console.log(error);
-				setError(error.message);
-			} else {
-				setError("Unknown error");
-			}
+		} catch (err) {
+			console.error(err);
+			const message = err instanceof Error ? err.message : "Unknown error";
+			setStep({ kind: "error", message });
 		}
-		setLoadingTx(false);
 	};
 
 	return (
 		<div className="card">
-			{userOpHash && (
+			{step.kind === "pending" && (
 				<p>
 					Your account setup is in progress. This operation gas is sponsored by{" "}
-					{gasSponsor?.name}
+					{step.sponsor?.name}
 					<a
-						href={gasSponsor?.url}
+						href={step.sponsor?.url}
 						target="_blank"
 						rel="noopener noreferrer"
 						style={{ marginLeft: "5px" }}
 					>
 						<img
-							src={gasSponsor?.icons[0]}
+							src={step.sponsor?.icons[0]}
 							alt="logo"
 							style={{ width: "25px", height: "25px", verticalAlign: "middle" }}
 						/>
@@ -134,43 +123,44 @@ function SafeCard({ passkey }: { passkey: PasskeyLocalStorageFormat }) {
 					Track your operation on{" "}
 					<a
 						target="_blank"
-						href={`https://${chainName.toLowerCase()}.blockscout.com/op/${userOpHash}`}
+						rel="noopener noreferrer"
+						href={`https://${chainName.toLowerCase()}.blockscout.com/op/${step.userOpHash}`}
 					>
 						the block explorer
 					</a>
 				</p>
 			)}
-			{txHash && (
+
+			{step.kind === "success" && (
 				<>
-					You collected an NFT, secured with your Safe Account & authenticated
+					You collected an NTF, secured with your Safe Account & authenticated
 					by your Device Passkeys.
 					<br />
 					<br />
 					View more on{" "}
 					<a
 						target="_blank"
-						href={`https://${chainName}.blockscout.com/tx/${txHash}`}
+						rel="noopener noreferrer"
+						href={`https://${chainName}.blockscout.com/tx/${step.txHash}`}
 					>
 						the block explorer
 					</a>
 					<br />
 				</>
 			)}
-			{loadingTx && !userOpHash ? (
-				<p>"Preparing transaction.."</p>
-			) : (
-				accountAddress && (
-					<div className="card">
-						<br />
-						<button onClick={handleMintNFT} disabled={!!userOpHash}>
-							Mint NFT
-						</button>
-					</div>
-				)
-			)}{" "}
-			{error && (
+
+			{step.kind === "preparing" && <p>"Preparing transaction.."</p>}
+
+			{(step.kind === "idle" || step.kind === "success" || step.kind === "error") && (
 				<div className="card">
-					<p>Error: {error}</p>
+					<br />
+					<button onClick={handleMintNFT}>Mint NFT</button>
+				</div>
+			)}
+
+			{step.kind === "error" && (
+				<div className="card">
+					<p>Error: {step.message}</p>
 				</div>
 			)}
 		</div>
