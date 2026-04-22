@@ -1,10 +1,7 @@
 import safeLogo from "/safe-logo-white.svg";
 import candideLogo from "/candide-atelier-logo.svg";
-import {
-	PasskeyLocalStorageFormat,
-	createPasskey,
-	toLocalStorageFormat,
-} from "./logic/passkeys.ts";
+import { createPasskey, toLocalStorageFormat } from "./logic/passkeys.ts";
+import type { PasskeyLocalStorageFormat } from "./logic/passkeys.ts";
 import "./App.css";
 import { useLocalStorageState } from "./hooks/useLocalStorageState.ts";
 import { useState } from "react";
@@ -15,6 +12,16 @@ import { FaqCard } from "./components/FaqCard.tsx";
 const PASSKEY_LOCALSTORAGE_KEY = "passkeyId";
 
 function App() {
+	// DEMO SHORTCUT — Persisting the passkey's public-key coords (x, y) in
+	// localStorage is fine for a single-device demo but is NOT a production
+	// pattern. Clearing browser data, a new device, or Safari ITP will
+	// orphan the account: the passkey still exists in the user's Keychain /
+	// password manager, but the app no longer knows which Safe it owns.
+	//
+	// For production, index (credentialId -> x, y, accountAddress) on a
+	// backend you control, OR pack the compressed pubkey into the WebAuthn
+	// userHandle so it's returned on every `navigator.credentials.get()`.
+	// Don't ship this pattern as-is.
 	const [passkey, setPasskey] = useLocalStorageState<
 		PasskeyLocalStorageFormat | undefined
 	>(PASSKEY_LOCALSTORAGE_KEY, undefined);
