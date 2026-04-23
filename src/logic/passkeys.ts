@@ -2,6 +2,7 @@ import {
   createCredential,
   type P256Credential,
 } from 'ox/WebAuthnP256'
+import { pubkeyCoordinatesFromJson } from 'abstractionkit'
 
 
 /**
@@ -75,19 +76,18 @@ function toLocalStorageFormat(passkey: P256Credential): PasskeyLocalStorageForma
  * `storage.ts` writes bigints as hex strings (`"0x…"`) with a
  * JSON.stringify replacer, but `useLocalStorageState` reads with plain
  * `JSON.parse` — no inverse reviver — so after a round-trip
- * `pubkeyCoordinates.{x,y}` are strings, not bigints. Callers that pass
- * the coords to APIs with strict bigint types (e.g. `fromWebAuthn`) must
- * coerce before use. Idempotent — safe to call on freshly-minted passkeys
- * whose coords are already bigints.
+ * `pubkeyCoordinates.{x,y}` are strings, not bigints. Idempotent — safe
+ * to call on freshly-minted passkeys whose coords are already bigints.
+ *
+ * Delegates to `abstractionkit.pubkeyCoordinatesFromJson` which accepts
+ * either a JSON string or a pre-parsed `{ x, y }` object with mixed
+ * bigint / hex-string / decimal-string values and produces canonical
+ * `{ x: bigint, y: bigint }`.
  */
 function fromLocalStorageFormat(passkey: PasskeyLocalStorageFormat): PasskeyLocalStorageFormat {
-  const { x, y } = passkey.pubkeyCoordinates
   return {
     id: passkey.id,
-    pubkeyCoordinates: {
-      x: typeof x === 'bigint' ? x : BigInt(x),
-      y: typeof y === 'bigint' ? y : BigInt(y),
-    },
+    pubkeyCoordinates: pubkeyCoordinatesFromJson(passkey.pubkeyCoordinates),
   }
 }
 
