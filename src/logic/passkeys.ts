@@ -69,8 +69,31 @@ function toLocalStorageFormat(passkey: P256Credential): PasskeyLocalStorageForma
   }
 }
 
+/**
+ * Re-hydrate a passkey pulled from localStorage.
+ *
+ * `storage.ts` writes bigints as hex strings (`"0x…"`) with a
+ * JSON.stringify replacer, but `useLocalStorageState` reads with plain
+ * `JSON.parse` — no inverse reviver — so after a round-trip
+ * `pubkeyCoordinates.{x,y}` are strings, not bigints. Callers that pass
+ * the coords to APIs with strict bigint types (e.g. `fromWebAuthn`) must
+ * coerce before use. Idempotent — safe to call on freshly-minted passkeys
+ * whose coords are already bigints.
+ */
+function fromLocalStorageFormat(passkey: PasskeyLocalStorageFormat): PasskeyLocalStorageFormat {
+  const { x, y } = passkey.pubkeyCoordinates
+  return {
+    id: passkey.id,
+    pubkeyCoordinates: {
+      x: typeof x === 'bigint' ? x : BigInt(x),
+      y: typeof y === 'bigint' ? y : BigInt(y),
+    },
+  }
+}
+
 
 export {
 	createPasskey,
 	toLocalStorageFormat,
+	fromLocalStorageFormat,
 };

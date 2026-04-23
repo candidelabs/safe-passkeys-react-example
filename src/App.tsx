@@ -1,6 +1,6 @@
 import safeLogo from "/safe-logo-white.svg";
 import candideLogo from "/candide-atelier-logo.svg";
-import { createPasskey, toLocalStorageFormat } from "./logic/passkeys.ts";
+import { createPasskey, fromLocalStorageFormat, toLocalStorageFormat } from "./logic/passkeys.ts";
 import type { PasskeyLocalStorageFormat } from "./logic/passkeys.ts";
 import "./App.css";
 import { useLocalStorageState } from "./hooks/useLocalStorageState.ts";
@@ -22,9 +22,14 @@ function App() {
 	// backend you control, OR pack the compressed pubkey into the WebAuthn
 	// userHandle so it's returned on every `navigator.credentials.get()`.
 	// Don't ship this pattern as-is.
-	const [passkey, setPasskey] = useLocalStorageState<
+	const [rawPasskey, setPasskey] = useLocalStorageState<
 		PasskeyLocalStorageFormat | undefined
 	>(PASSKEY_LOCALSTORAGE_KEY, undefined);
+	// `useLocalStorageState` reads with plain JSON.parse, but `storage.ts`
+	// writes bigints as hex strings. Rehydrate the coords to bigint here so
+	// downstream callers (fromWebAuthn, createAccountAddress) see the
+	// declared type.
+	const passkey = rawPasskey ? fromLocalStorageFormat(rawPasskey) : rawPasskey;
 	const [error, setError] = useState<string>();
 
 	const handleCreatePasskeyClick = async () => {
